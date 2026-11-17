@@ -1,0 +1,79 @@
+name: Snowball copy bot
+
+# Проверка новых сделок портфеля. Запускается по расписанию каждые 10 минут
+# и вручную (Actions → Run workflow). Состояние («что уже отправлено»)
+# хранится в state/state.json и коммитится обратно в репозиторий.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      first_run:
+        description: "Первый запуск: baseline (молча запомнить историю) или last:5 (прислать 5 последних сделок)"
+        default: "baseline"
+        required: false
+      dry_run:
+        description: "Только показать в логе, ничего не отправлять"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: snowball-bot
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Забрать код
+        uses: actions/checkout@v4
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Проверить новые сделки
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_COMMANDS: "0"
+          STATE_BACKEND: json
+          STATE_PATH: state/state.json
+          FIRST_RUN: ${{ github.event.inputs.first_run || 'baseline' }}
+          POLL_INTERVAL: "600"
+          ONLY_TYPE: both
+          MIN_AMOUNT: "0"
+          COPY_SCALE: "0"
+          ASSET_DETAILS: "1"
+          CONSOLE_OUTPUT: "0"
+          TZ_NAME: Europe/Moscow
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python3 bot.py --dry-run
+          else
+            python3 bot.py --once
+          fi
+
+      - name: Сохранить состояние в репозиторий
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          set -e
+          if [ -z "$(git status --porcelain state)" ]; then
+            echo "Новых сделок не было — состояние не изменилось"
+            exit 0
+          fi
+          git config user.name  "snowball-bot"
+          git config user.email "snowball-bot@users.noreply.github.com"
+          git add state
+          git commit -m "state: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
+            git push && break || sleep 5
+          done

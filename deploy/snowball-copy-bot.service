@@ -1,0 +1,17 @@
+[Unit]
+Description=Snowball Copy Bot — уведомления о сделках публичного портфеля
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=snowball
+WorkingDirectory=/opt/snowball-copy-bot
+ExecStart=/usr/bin/python3 bot.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+# Если .env лежит рядом с проектом, ничего дополнительно указывать не нужно.
+
+[Install]
+WantedBy=multi-user.target
