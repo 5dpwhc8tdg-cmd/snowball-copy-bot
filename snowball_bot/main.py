@@ -118,25 +118,29 @@ def check_once(cfg: Config, store: Store, notifiers: list[Notifier], dry_run: bo
         return 0
 
     initialized = bool(store.get_meta("initialized"))
+    all_ids = [r.get("id") for r in rows if r.get("id")]
     new_rows = [r for r in rows if not store.is_seen(r.get("id") or "")]
 
-    if not initialized:
+    if cfg.force_last_n:
+        # Ручной тестовый прогон из GitHub Actions: прислать последние N сделок,
+        # даже если они уже отмечены как просмотренные.
+        new_rows = sort_chrono(rows[: cfg.force_last_n])
+        store.mark_seen(all_ids)
+        store.set_meta("initialized", True)
+        log.info("Тестовый прогон: принудительно отправляю %d последних сделок", len(new_rows))
+    elif not initialized:
+        # Самый первый запуск: запоминаем историю, чтобы не выстрелить 4000 пушами.
         mode = cfg.first_run
+        n = 0
         if mode.startswith("last:"):
             try:
                 n = int(mode.split(":", 1)[1])
             except ValueError:
                 n = 0
-            to_send = sort_chrono(new_rows[:n]) if n else []
-        else:
-            to_send = []
-        store.mark_seen([r.get("id") for r in rows if r.get("id")])
+        to_send = sort_chrono(new_rows[:n]) if n else []
+        store.mark_seen(all_ids)
         store.set_meta("initialized", True)
-        log.info(
-            "Первый запуск: запомнил %d сделок как историю, к отправке %d",
-            len(rows),
-            len(to_send),
-        )
+        log.info("Первый запуск: запомнил %d сделок как историю, к отправке %d", len(rows), len(to_send))
         new_rows = to_send
 
     if not new_rows:

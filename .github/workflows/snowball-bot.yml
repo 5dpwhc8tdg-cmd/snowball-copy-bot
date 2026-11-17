@@ -9,9 +9,9 @@ on:
     - cron: "*/10 * * * *"
   workflow_dispatch:
     inputs:
-      first_run:
-        description: "Первый запуск: baseline (молча запомнить историю) или last:5 (прислать 5 последних сделок)"
-        default: "baseline"
+      send_last:
+        description: "Прислать N последних сделок для проверки (0 — обычный режим: только новое)"
+        default: "0"
         required: false
       dry_run:
         description: "Только показать в логе, ничего не отправлять"
@@ -46,7 +46,8 @@ jobs:
           TELEGRAM_COMMANDS: "0"
           STATE_BACKEND: json
           STATE_PATH: state/state.json
-          FIRST_RUN: ${{ github.event.inputs.first_run || 'baseline' }}
+          FIRST_RUN: baseline
+          FORCE_LAST_N: ${{ github.event.inputs.send_last || '0' }}
           POLL_INTERVAL: "600"
           ONLY_TYPE: both
           MIN_AMOUNT: "0"

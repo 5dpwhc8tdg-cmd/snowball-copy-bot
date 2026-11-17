@@ -73,6 +73,8 @@ class Config:
 
     # первое включение: "baseline" — только запомнить историю, "last:N" — прислать N последних сделок
     first_run: str = field(default_factory=lambda: _env("FIRST_RUN", "baseline").lower())
+    # принудительно прислать N последних сделок независимо от состояния (для проверки из Actions)
+    force_last_n: int = field(default_factory=lambda: max(0, _env_int("FORCE_LAST_N", 0)))
 
     # --- куда присылать ---------------------------------------------------
     telegram_token: str = field(default_factory=lambda: _env("TELEGRAM_BOT_TOKEN"))
