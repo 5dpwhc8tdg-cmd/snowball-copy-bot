@@ -1,5 +1,18 @@
 {
  "assets": {
+  "RU000A103C53": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2031-06-20",
+    "name": "РЕСО-Лизинг ООО БО-П-11",
+    "nominal": 1000,
+    "price": 1008.8,
+    "price_pct_of_nominal": 100.9,
+    "rating": null,
+    "ytm": 15.389050630407258
+   },
+   "updated_at": 1795025290
+  },
   "RU000A109KV0": {
    "payload": {
     "is_qualified_only": null,
@@ -26,6 +39,58 @@
    },
    "updated_at": 1794941582
   },
+  "RU000A10BNM4": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2028-05-07",
+    "name": "АБЗ-1 002P-03",
+    "nominal": 1000,
+    "price": 992.8,
+    "price_pct_of_nominal": 99.3,
+    "rating": null,
+    "ytm": 15.402806726387734
+   },
+   "updated_at": 1795025299
+  },
+  "RU000A10BUN7": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2030-05-29",
+    "name": "ДиректЛизинг БО 002Р-05",
+    "nominal": 1000,
+    "price": 663.96792,
+    "price_pct_of_nominal": 66.4,
+    "rating": null,
+    "ytm": 60.51358316862122
+   },
+   "updated_at": 1795025313
+  },
+  "RU000A10C5B8": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2028-07-06",
+    "name": "Денум Солюшнз 001Р-01",
+    "nominal": 1000,
+    "price": 995.7,
+    "price_pct_of_nominal": 99.6,
+    "rating": null,
+    "ytm": 29.334922382000627
+   },
+   "updated_at": 1795025302
+  },
+  "RU000A10C741": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2028-07-13",
+    "name": "Кокс 001P-04",
+    "nominal": 1000,
+    "price": 893.8,
+    "price_pct_of_nominal": 89.4,
+    "rating": null,
+    "ytm": 83.69048457927643
+   },
+   "updated_at": 1795025279
+  },
   "RU000A10D4E4": {
    "payload": {
     "is_qualified_only": null,
@@ -39,6 +104,45 @@
    },
    "updated_at": 1794941592
   },
+  "RU000A10DEE6": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2029-08-10",
+    "name": "Байсэл 001P-04",
+    "nominal": 1000,
+    "price": 998.1,
+    "price_pct_of_nominal": 99.8,
+    "rating": null,
+    "ytm": 21.461904888757577
+   },
+   "updated_at": 1795025283
+  },
+  "RU000A10DJM8": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2028-11-17",
+    "name": "Аквилон-Лизинг БО-04-001P",
+    "nominal": 1000,
+    "price": 761.748,
+    "price_pct_of_nominal": 76.2,
+    "rating": null,
+    "ytm": 16.576211718544386
+   },
+   "updated_at": 1795025306
+  },
+  "RU000A10DLC5": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2028-11-10",
+    "name": "ООО АСВ БО-04-001P",
+    "nominal": 1000,
+    "price": 951.4,
+    "price_pct_of_nominal": 95.1,
+    "rating": null,
+    "ytm": 28.252637975775674
+   },
+   "updated_at": 1795025316
+  },
   "RU000A10EHB3": {
    "payload": {
     "is_qualified_only": null,
@@ -51,6 +155,45 @@
     "ytm": 40.74479998500464
    },
    "updated_at": 1794941579
+  },
+  "RU000A10EJR5": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2029-02-25",
+    "name": "Арлифт 001Р-01",
+    "nominal": 1000,
+    "price": 753.2,
+    "price_pct_of_nominal": 75.3,
+    "rating": null,
+    "ytm": 71.66860485157011
+   },
+   "updated_at": 1795025309
+  },
+  "RU000A10FC96": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2029-05-23",
+    "name": "Борец Капитал 001Р-07",
+    "nominal": 1000,
+    "price": 995.5,
+    "price_pct_of_nominal": 99.6,
+    "rating": null,
+    "ytm": 17.86959364870421
+   },
+   "updated_at": 1795025286
+  },
+  "RU000A10FJJ9": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2029-06-14",
+    "name": "АСВ БО-05-001P",
+    "nominal": 1000,
+    "price": 910,
+    "price_pct_of_nominal": 91.0,
+    "rating": null,
+    "ytm": 29.722565154420057
+   },
+   "updated_at": 1795025294
   },
   "RU000A10FXF8": {
    "payload": {
@@ -569,6 +712,17 @@
   "01a1ea6b-fba8-75a0-8b5e-85d480da8455": 1794941576,
   "01a1eac6-6f93-79bc-8200-47574b16d008": 1794941576,
   "01a1eac6-d78a-7ed8-b0a9-a7e78da758b9": 1794941576,
-  "01a1ead2-a7b7-7fc4-9498-144d31097d2f": 1794941576
+  "01a1ead2-a7b7-7fc4-9498-144d31097d2f": 1794941576,
+  "01a1eeb7-8544-739a-b7bc-ee5dc3884ff9": 1795025276,
+  "01a1eeb7-c4ec-76f6-9031-49be850d39ee": 1795025276,
+  "01a1eeb7-f81a-7fb7-8f6e-27774bb4d9a0": 1795025276,
+  "01a1eeb8-299b-7d35-91c1-1ee892f476d5": 1795025276,
+  "01a1eeb8-64bb-7bc8-a16c-487fab49d09d": 1795025276,
+  "01a1eeb8-9e14-70c9-80de-160b7b9c47de": 1795025276,
+  "01a1eeb8-dd9b-7ac5-afbd-d3e829cd32b6": 1795025276,
+  "01a1eeb9-38b3-7efe-a9f6-b936ea339587": 1795025276,
+  "01a1eeb9-72f5-71e0-ba2c-0b914276c957": 1795025276,
+  "01a1eeb9-d319-73b3-abc5-ebb64712bf24": 1795025276,
+  "01a1eeb9-faeb-7b12-9247-37947f560bef": 1795025276
  }
 }
