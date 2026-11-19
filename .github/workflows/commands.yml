@@ -31,6 +31,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Зависимости
+        run: pip install --quiet python-dotenv
+
       - name: Слушать команды
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -60,9 +63,6 @@ jobs:
           DIP_COOLDOWN_HOURS: "6"
           TZ_NAME: Europe/Moscow
         run: python3 commands.py
-
-      - name: Зависимости
-        run: pip install --quiet python-dotenv
 
       - name: Сохранить состояние (offset команд, капитал, кулдаун)
         if: always()
