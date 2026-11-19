@@ -17,6 +17,10 @@ on:
         description: "Только показать в логе, ничего не отправлять"
         type: boolean
         default: false
+      send_help:
+        description: "Прислать в чат справку по командам бота"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -64,7 +68,9 @@ jobs:
           CONSOLE_OUTPUT: "0"
           TZ_NAME: Europe/Moscow
         run: |
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+          if [ "${{ github.event.inputs.send_help }}" = "true" ]; then
+            python3 bot.py --send-help
+          elif [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             python3 bot.py --dry-run
           else
             python3 bot.py --once

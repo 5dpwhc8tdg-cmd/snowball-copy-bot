@@ -359,6 +359,9 @@ class CommandBot:
                 if not text or not chat_id or chat_id not in self.allowed:
                     continue
                 log.info("Команда из чата %s: %s", chat_id, text[:60])
+                if chat_id not in self.allowed:
+                    log.warning("Чужой чат %s — игнорирую", chat_id)
+                    continue
                 try:
                     self.handle(chat_id, text)
                 except Exception:  # noqa: BLE001

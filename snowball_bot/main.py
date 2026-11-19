@@ -438,6 +438,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--once", action="store_true", help="одна проверка и выход")
     parser.add_argument("--dry-run", action="store_true", help="показать сообщение в консоли, не отправлять")
     parser.add_argument("--test-notify", action="store_true", help="проверить каналы доставки")
+    parser.add_argument("--send-help", action="store_true",
+                        help="отправить в чат справку по командам")
     parser.add_argument("--commands", action="store_true",
                         help="слушать команды в Telegram (/now, /dips, /data, /cap …)")
     parser.add_argument("--env", default=".env", help="путь к .env")
@@ -478,6 +480,18 @@ def main(argv: list[str] | None = None) -> int:
 
     store = open_store(cfg)
     notifiers = build_notifiers(cfg)
+
+    if args.send_help:
+        try:
+            import commands as cmd_mod
+
+            text = cmd_mod.HELP
+        except Exception:  # noqa: BLE001
+            text = "🤖 Команды: /now /dips /data /status /plan /summary /last /cap /help"
+        for n in notifiers:
+            n.send(text, formatter.to_plain(text))
+        print("Справка отправлена")
+        return 0
 
     if args.test_notify:
         text = (
