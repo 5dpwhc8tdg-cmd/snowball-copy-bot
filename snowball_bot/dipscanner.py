@@ -259,6 +259,44 @@ def sane_day_high(row: dict) -> float | None:
     return max([med] + [v for v in vals if v])
 
 
+def market_breadth(snapshot: dict[str, dict]) -> dict:
+    """Широта рынка: сколько бумаг в минусе, сколько упало сильно, какая медиана.
+
+    Нужна, чтобы отличить общую панику (все падают — часто это ставка/новости,
+    а не проблема выпуска) от падения одной бумаги (там важнее её собственная
+    история). Считаем только ликвидные бумаги, иначе счёт размывают «мертвые»
+    выпуски с одной сделкой.
+    """
+    moves: list[float] = []
+    deep = 0
+    for row in snapshot.values():
+        last, prev = row.get("last"), row.get("prev")
+        if not last or not prev or prev <= 0:
+            continue
+        if (row.get("numtrades") or 0) < 3:      # слишком тихо — не показатель
+            continue
+        move = (last - prev) / prev * 100
+        moves.append(move)
+        if move <= -2.0:
+            deep += 1
+    if not moves:
+        return {}
+    moves.sort()
+    n = len(moves)
+    nonzero = [m for m in moves if m] or [0.0]
+    return {
+        "total": n,
+        "down": sum(1 for m in moves if m < 0),
+        "up": sum(1 for m in moves if m > 0),
+        "flat": sum(1 for m in moves if m == 0),
+        "deep": deep,
+        "down_share": sum(1 for m in moves if m < 0) / n * 100,
+        "median": nonzero[len(nonzero) // 2],
+        "worst": moves[0],
+        "best": moves[-1],
+    }
+
+
 # ---------------------------------------------------------------------------
 # Главная функция: найти интересные провалы
 # ---------------------------------------------------------------------------
@@ -278,6 +316,12 @@ def find_dips(
     if not snapshot:
         return []
     series_all = record_history(store, snapshot)
+    breadth = market_breadth(snapshot)
+    if breadth:
+        try:
+            store.set_meta("market_breadth", {**breadth, "at": now_msk().strftime("%Y-%m-%d %H:%M")})
+        except Exception:  # noqa: BLE001
+            pass
     moex_flags = moex_flags or {}
 
     out: list[dict] = []

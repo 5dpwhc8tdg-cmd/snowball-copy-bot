@@ -226,8 +226,9 @@ class CommandBot:
             except Exception as e:  # noqa: BLE001
                 log.warning("рейтинги/профили: %s", e)
             # cmd_dips игнорирует кулдаун — это ручной запуск
+            breadth = self.store.get_meta("market_breadth", {}) or {}
             text = dips_cmd.build_message(
-                clean or dips, rating_map, self.cfg, self.cfg.dip_window, profiles
+                clean or dips, rating_map, self.cfg, self.cfg.dip_window, profiles, breadth
             )
             self.api.send(chat_id, text)
             dips_cmd.remember_cooldown(self.store, clean or dips)

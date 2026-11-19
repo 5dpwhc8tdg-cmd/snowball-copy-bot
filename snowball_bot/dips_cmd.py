@@ -100,8 +100,34 @@ def _timing_lines(d: dict) -> list[str]:
     return out
 
 
+def _breadth_lines(breadth: dict | None) -> list[str]:
+    """🌡 Широта рынка: общая паника или отдельная бумага."""
+    if not breadth or not breadth.get("total"):
+        return []
+    total, down, deep = breadth["total"], breadth["down"], breadth.get("deep", 0)
+    share = breadth.get("down_share") or 0
+    med = breadth.get("median") or 0
+    worst = breadth.get("worst") or 0
+
+    if share >= 65:
+        verdict = ("🔴 общая паника — падает почти всё: скорее ставка или новости рынка, "
+                   "чем проблема конкретного выпуска")
+    elif share >= 40:
+        verdict = "🟡 смешанный рынок — падение частичное, смотрите историю самой бумаги"
+    else:
+        verdict = ("🟢 рынок в целом спокоен — падение индивидуальное, "
+                   "важнее собственная статистика отскоков у бумаги")
+
+    med_txt = _num(med, 2)
+    if med_txt in ("-0,00", "-0,0"):
+        med_txt = med_txt.lstrip("-")
+    line = (f"🌡 <b>Рынок:</b> в минусе {down} из {total} бумаг ({_num(share, 0)}%), "
+            f"глубоко (−2% и ниже) — {deep}, медиана {med_txt}%, худшая {_num(worst, 1)}%")
+    return [line, f"<i>{verdict}</i>"]
+
+
 def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, minutes: int,
-                  profiles: dict | None = None) -> str:
+                  profiles: dict | None = None, breadth: dict | None = None) -> str:
     """HTML-сообщение со списком провалов."""
     profiles = profiles or {}
     clean = [d for d in dips if not d["is_bad"]]
@@ -121,7 +147,9 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
     parts = [head,
              f"<i>MOEX, падение от максимума дня / за {minutes} мин · "
              f"сигнал собран в {now_txt} МСК</i>",
-             plan, ""]
+             plan]
+    parts.extend(_breadth_lines(breadth))
+    parts.append("")
 
     def line(d: dict, clean_flag: bool) -> str:
         name = html.escape(str(d.get("name") or d["secid"]))
@@ -298,7 +326,8 @@ def run(cfg: Config, once: bool = True, dry_run: bool = False) -> int:
         except Exception as e:  # noqa: BLE001
             log.warning("Аналитика по %s недоступна: %s", isin, e)
 
-    text = build_message(dips, rating_map, cfg, cfg.dip_window, profiles)
+    breadth = store.get_meta("market_breadth", {}) or {}
+    text = build_message(dips, rating_map, cfg, cfg.dip_window, profiles, breadth)
     plain = formatter.to_plain(text)
 
     if dry_run:
