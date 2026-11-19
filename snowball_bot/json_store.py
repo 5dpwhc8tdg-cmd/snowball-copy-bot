@@ -107,5 +107,11 @@ class JsonStore:
         self.dirty = False
         return True
 
+    def flush(self) -> None:
+        """Немедленно записать состояние на диск."""
+        saver = getattr(self, "_save", None)
+        if callable(saver):
+            saver()
+
     def close(self) -> None:
         self.save()

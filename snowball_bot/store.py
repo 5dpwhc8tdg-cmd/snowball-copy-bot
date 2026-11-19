@@ -92,6 +92,9 @@ class Store:
         )
         self.conn.commit()
 
+    def flush(self) -> None:  # noqa: D401
+        """По умолчанию ничего не делаем — переопределяют те, кому нужно."""
+
     def close(self) -> None:
         try:
             self.conn.close()

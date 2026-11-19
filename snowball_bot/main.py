@@ -438,6 +438,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--once", action="store_true", help="одна проверка и выход")
     parser.add_argument("--dry-run", action="store_true", help="показать сообщение в консоли, не отправлять")
     parser.add_argument("--test-notify", action="store_true", help="проверить каналы доставки")
+    parser.add_argument("--commands", action="store_true",
+                        help="слушать команды в Telegram (/now, /dips, /data, /cap …)")
     parser.add_argument("--env", default=".env", help="путь к .env")
     sub = parser.add_subparsers(dest="cmd")
     p_dips = sub.add_parser("dips", help="сканировать резкие падения облигаций на MOEX")
@@ -451,6 +453,14 @@ def main(argv: list[str] | None = None) -> int:
     log.info("Портфель: %s (%s)", cfg.portfolio_title, cfg.portfolio_id)
     log.info("Каналы: %s", ", ".join(cfg.channels()))
     log.info("Интервал опроса: %s сек", cfg.poll_interval)
+
+    if args.commands:
+        from pathlib import Path
+
+        import runpy
+
+        return int(runpy.run_path(str(Path(__file__).resolve().parent.parent / "commands.py"),
+                                  run_name="__main__") and 0)
 
     if getattr(args, "cmd", None) == "dips":
         from . import dips_cmd

@@ -1,0 +1,77 @@
+name: Ручной запуск по команде из чата
+
+# Зачем: GitHub присылает команду из Telegram только работающему процессу.
+# Здесь мы не держим процесс — вместо этого раз в 5 минут читаем чат через
+# getUpdates и, если видим команду, выполняем её (сразу отвечая в чат).
+#
+# Поддерживаются: /now, /dips, /data, /status, /plan, /cap, /last.
+# Работает даже если «живой» workflow commands.yml выключен или исчерпал
+# 6-часовой лимит job'а.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: snowball-manual
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Проверить команды в чате
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_COMMANDS: "0"
+          STATE_BACKEND: json
+          STATE_PATH: state/state.json
+          COPY_SCALE: "0"
+          MY_CAPITAL: "100000"
+          OWNER_CAPITAL: "7000000"
+          MY_MAX_POSITION_PCT: "10"
+          MY_RESERVE_PCT: "20"
+          HOLD_DAYS: "2"
+          ONLY_RATING_A_PLUS: "0"
+          ASSET_DETAILS: "1"
+          CHECK_QUALIFIED: "1"
+          DIP_MIN_DROP: "4.0"
+          DIP_DAY_DROP: "3.0"
+          DIP_WINDOW: "30"
+          DIP_MIN_PRICE_PCT: "70"
+          DIP_MIN_TRADES: "5"
+          DIP_MIN_VALUE: "30000"
+          DIP_COOLDOWN_HOURS: "6"
+          TZ_NAME: Europe/Moscow
+        run: python3 commands.py --once
+
+      - name: Зависимости
+        run: pip install --quiet python-dotenv
+
+      - name: Сохранить состояние
+        run: |
+          set -e
+          if [ -z "$(git status --porcelain state)" ]; then
+            echo "Состояние не изменилось"
+            exit 0
+          fi
+          git config user.name  "snowball-bot"
+          git config user.email "snowball-bot@users.noreply.github.com"
+          git add state
+          git commit -m "manual state: $(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
+            git push && break || sleep 5
+          done

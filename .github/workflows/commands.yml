@@ -1,0 +1,82 @@
+name: Команды в Telegram (живой слушатель)
+
+# Постоянный слушатель команд: пока job запущен, бот в Telegram отвечает на
+# /now, /dips, /data, /status, /cap, /plan, /last. GitHub не даёт job'ам
+# работать дольше 6 часов, поэтому слушатель выходит через 5.4 ч, а cron
+# перезапускает его. Ручной запуск — кнопка «Run workflow».
+#
+# Держите этот workflow включённым, если хотите управлять ботом из чата.
+# Он не мешает остальным: /now и /dips работают и без него (см. manual.yml).
+
+on:
+  schedule:
+    - cron: "0 */5 * * *"   # каждые 5 часов — перезапуск «живого» слушателя
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: snowball-commands
+  cancel-in-progress: false
+
+jobs:
+  listen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Слушать команды
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_COMMANDS: "0"
+          STATE_BACKEND: json
+          STATE_PATH: state/state.json
+          FIRST_RUN: baseline
+          POLL_INTERVAL: "600"
+          ONLY_TYPE: both
+          MIN_AMOUNT: "0"
+          COPY_SCALE: "0"
+          MY_CAPITAL: "100000"
+          OWNER_CAPITAL: "7000000"
+          MY_MAX_POSITION_PCT: "10"
+          MY_RESERVE_PCT: "20"
+          HOLD_DAYS: "2"
+          ONLY_RATING_A_PLUS: "0"
+          ASSET_DETAILS: "1"
+          CHECK_QUALIFIED: "1"
+          DIP_MIN_DROP: "4.0"
+          DIP_DAY_DROP: "3.0"
+          DIP_WINDOW: "30"
+          DIP_MIN_PRICE_PCT: "70"
+          DIP_MIN_TRADES: "5"
+          DIP_MIN_VALUE: "30000"
+          DIP_COOLDOWN_HOURS: "6"
+          TZ_NAME: Europe/Moscow
+        run: python3 commands.py
+
+      - name: Зависимости
+        run: pip install --quiet python-dotenv
+
+      - name: Сохранить состояние (offset команд, капитал, кулдаун)
+        if: always()
+        run: |
+          set -e
+          if [ -z "$(git status --porcelain state)" ]; then
+            echo "Состояние не изменилось"
+            exit 0
+          fi
+          git config user.name  "snowball-bot"
+          git config user.email "snowball-bot@users.noreply.github.com"
+          git add state
+          git commit -m "commands state: $(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
+            git push && break || sleep 5
+          done

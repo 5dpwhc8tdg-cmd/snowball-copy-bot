@@ -128,6 +128,21 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
     return "\n".join(parts)
 
 
+def remember_cooldown(store, dips: list[dict], hours: int | None = None) -> None:
+    """Записать сигналы в кулдаун, чтобы не повторяться (ручной запуск тоже)."""
+    import time as _time
+
+    alerts = store.get_meta("dip_alerts", {}) or {}
+    now = _time.time()
+    for d in dips:
+        alerts[d.get("isin") or d["secid"]] = now
+    store.set_meta("dip_alerts", alerts)
+    try:
+        store.flush()
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def run(cfg: Config, once: bool = True, dry_run: bool = False) -> int:
     store = open_store(cfg)
     notifiers = build_notifiers(cfg)
