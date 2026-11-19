@@ -70,6 +70,10 @@ class Config:
     include_income: bool = field(default_factory=lambda: _env_bool("INCLUDE_INCOME", False))
     copy_scale: float = field(default_factory=lambda: _env_float("COPY_SCALE", 0))  # 0 = не пересчитывать
     asset_details: bool = field(default_factory=lambda: _env_bool("ASSET_DETAILS", True))
+    # проверять доступность неквалу: MOEX-флаги + рейтинг (нужен ли тест)
+    check_qualified: bool = field(default_factory=lambda: _env_bool("CHECK_QUALIFIED", True))
+    # присылать только то, что неквал может купить без теста
+    only_no_test: bool = field(default_factory=lambda: _env_bool("ONLY_NO_TEST", False))
 
     # первое включение: "baseline" — только запомнить историю, "last:N" — прислать N последних сделок
     first_run: str = field(default_factory=lambda: _env("FIRST_RUN", "baseline").lower())

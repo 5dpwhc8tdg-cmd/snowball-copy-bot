@@ -12,7 +12,7 @@ import traceback
 import urllib.request
 import json
 
-from . import api, formatter
+from . import api, formatter, moex as moex_api, ratings as ratings_api
 from .config import Config, load_dotenv
 from .notify import Notifier, build_notifiers
 from .store import Store, open_store
@@ -43,6 +43,30 @@ def setup_logging(cfg: Config) -> None:
 # ---------------------------------------------------------------------------
 # Обогащение данными о бумаге
 # ---------------------------------------------------------------------------
+def enrich_moex(cfg: Config, store, txs: list[dict]) -> tuple[dict[str, dict], dict[str, str]]:
+    """MOEX-признаки (квал/дефолт/листинг) + рейтинги (нужен ли тест) по тикерам."""
+    if not cfg.asset_details:
+        return {}, {}
+    moex_map: dict[str, dict] = {}
+    rating_map: dict[str, str] = {}
+    tickers = [t.get("ticker") or "" for t in txs]
+    for ticker in dict.fromkeys(t for t in tickers if t):
+        data = moex_api.summary_for(ticker, store=store)
+        if data:
+            moex_map[ticker] = data
+        time.sleep(0.15)
+    if cfg.check_qualified:
+        try:
+            full = ratings_api.get_rating_map(store) if store is not None else ratings_api.fetch_rating_map()
+        except Exception as e:  # noqa: BLE001
+            log.warning("Не удалось получить карту рейтингов: %s", e)
+            full = {}
+        for ticker in moex_map:
+            if ticker in full:
+                rating_map[ticker] = full[ticker]
+    return moex_map, rating_map
+
+
 def enrich(cfg: Config, store: Store, tickers: list[str], exchange_hint: dict[str, str]) -> dict[str, dict]:
     """Возвращает {ticker: краткая карточка} — с кэшем в БД."""
     out: dict[str, dict] = {}
@@ -157,6 +181,21 @@ def check_once(cfg: Config, store: Store, notifiers: list[Notifier], dry_run: bo
 
     exchange_hint = {(t.get("ticker") or ""): (t.get("exchange") or "MCX") for t in filtered}
     infos = enrich(cfg, store, list(exchange_hint.keys()), exchange_hint)
+    moex_map, rating_map = enrich_moex(cfg, store, filtered)
+
+    if cfg.only_no_test:
+        keep = []
+        for tx in filtered:
+            ticker = tx.get("ticker") or ""
+            is_sell = formatter.classify(tx) == formatter.SELL
+            rating_ok = formatter.rating_rank(rating_map.get(ticker)) <= formatter.RATING_ORDER.index("A+")
+            if is_sell or rating_ok:
+                keep.append(tx)
+        if len(keep) != len(filtered):
+            log.info("ONLY_NO_TEST: отброшено %d сделок, недоступных неквалу", len(filtered) - len(keep))
+        filtered = keep
+        if not filtered:
+            return 0
 
     html_text = formatter.format_batch(
         filtered,
@@ -165,6 +204,8 @@ def check_once(cfg: Config, store: Store, notifiers: list[Notifier], dry_run: bo
         portfolio_url=cfg.snowball_url,
         copy_scale=cfg.copy_scale,
         infos=infos,
+        moex_map=moex_map,
+        rating_map=rating_map,
     )
     plain_text = formatter.to_plain(html_text)
 
@@ -268,6 +309,7 @@ class TelegramCommands(threading.Thread):
                     [(r.get("ticker") or "") for r in rows],
                     {(r.get("ticker") or ""): (r.get("exchange") or "MCX") for r in rows},
                 )
+                moex_map, rating_map = enrich_moex(self.cfg, self.store, rows)
                 html_text = formatter.format_batch(
                     rows,
                     tz=self.cfg.tz,
@@ -275,6 +317,8 @@ class TelegramCommands(threading.Thread):
                     portfolio_url=self.cfg.snowball_url,
                     copy_scale=self.cfg.copy_scale,
                     infos=infos,
+                    moex_map=moex_map,
+                    rating_map=rating_map,
                 )
                 for chunk in formatter.split_for_limit(html_text):
                     self._reply(chat_id, chunk)

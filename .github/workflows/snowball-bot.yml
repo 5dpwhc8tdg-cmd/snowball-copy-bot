@@ -53,6 +53,8 @@ jobs:
           MIN_AMOUNT: "0"
           COPY_SCALE: "0"
           ASSET_DETAILS: "1"
+          CHECK_QUALIFIED: "1"
+          ONLY_NO_TEST: "0"
           CONSOLE_OUTPUT: "0"
           TZ_NAME: Europe/Moscow
         run: |
