@@ -12,7 +12,7 @@ import traceback
 import urllib.request
 import json
 
-from . import api, formatter, moex as moex_api, ratings as ratings_api
+from . import analytics, api, formatter, moex as moex_api, ratings as ratings_api
 from .config import Config, load_dotenv
 from .notify import Notifier, build_notifiers
 from .store import Store, open_store
@@ -65,6 +65,37 @@ def enrich_moex(cfg: Config, store, txs: list[dict]) -> tuple[dict[str, dict], d
             if ticker in full:
                 rating_map[ticker] = full[ticker]
     return moex_map, rating_map
+
+
+def market_context(tx: dict) -> dict:
+    """Где владелец вошёл относительно дневного диапазона и что было с ценой потом."""
+    if tx.get("type") != api.TX_BUY:
+        return {}
+    try:
+        day = (tx.get("date") or "")[:10]
+        rows = analytics._block(
+            f"{analytics.ISS}/engines/stock/markets/bonds/securities/{tx.get('ticker')}/candles.json"
+            f"?iss.meta=off&interval=10&from={day}&till={day}", "candles")
+    except Exception:  # noqa: BLE001
+        return {}
+    rows = [r for r in rows if r.get("close")]
+    if len(rows) < 3:
+        return {}
+    paid = tx.get("pricePercent")
+    if not paid:
+        return {}
+    high = max(r["high"] for r in rows if r.get("high"))
+    low = min(r["low"] for r in rows if r.get("low"))
+    if high <= low:
+        return {}
+    pos = (paid - low) / (high - low) * 100
+    eod = rows[-1]["close"]
+    return {
+        "price_in_day_range_pct": pos,
+        "eod_after_pct": (eod - paid) / paid * 100,
+        "day_high": high,
+        "day_low": low,
+    }
 
 
 def enrich(cfg: Config, store: Store, tickers: list[str], exchange_hint: dict[str, str]) -> dict[str, dict]:
@@ -183,6 +214,23 @@ def check_once(cfg: Config, store: Store, notifiers: list[Notifier], dry_run: bo
     infos = enrich(cfg, store, list(exchange_hint.keys()), exchange_hint)
     moex_map, rating_map = enrich_moex(cfg, store, filtered)
 
+    profiles: dict[str, dict] = {}
+    market_map: dict[str, dict] = {}
+    if cfg.asset_details:
+        for tx in filtered:
+            ticker = tx.get("ticker") or ""
+            if ticker in profiles:
+                continue
+            isin = (moex_map.get(ticker) or {}).get("isin") or ticker
+            try:
+                profiles[ticker] = analytics.full_profile(isin, store=store)
+            except Exception as e:  # noqa: BLE001
+                log.debug("Профиль %s: %s", ticker, e)
+            try:
+                market_map[ticker] = market_context(tx)
+            except Exception:  # noqa: BLE001
+                pass
+
     if cfg.only_no_test:
         keep = []
         for tx in filtered:
@@ -206,6 +254,8 @@ def check_once(cfg: Config, store: Store, notifiers: list[Notifier], dry_run: bo
         infos=infos,
         moex_map=moex_map,
         rating_map=rating_map,
+        profiles=profiles,
+        market_map=market_map,
     )
     plain_text = formatter.to_plain(html_text)
 

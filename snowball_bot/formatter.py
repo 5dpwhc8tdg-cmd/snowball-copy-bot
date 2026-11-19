@@ -58,6 +58,69 @@ def asset_page_url(tx: dict) -> str:
 
 
 
+def analytics_lines(profile: dict | None, price_pct: float | None = None,
+                    html_mode: bool = True) -> list[str]:
+    """Компактная аналитика по бумаге: купон, ликвидность, история, личная статистика падений."""
+    if not profile:
+        return []
+    esc = html.escape if html_mode else (lambda s: s)
+    out: list[str] = []
+
+    # 1) купон: сколько и когда
+    cp_days = profile.get("next_coupon_days")
+    cp_val = profile.get("next_coupon_value")
+    cp_pct = profile.get("next_coupon_pct") or profile.get("coupon_pct")
+    if cp_days is not None and cp_val:
+        txt = f"💰 Купон {_num(cp_val, 2)} ₽/шт"
+        if cp_pct:
+            txt += f" ({_num(cp_pct, 1)}% годовых)"
+        txt += f" через {cp_days} дн. ({profile.get('next_coupon_date')})"
+        if cp_days <= 3:
+            txt += " — ⚠️ цена уже включает НКД, покупать «под купон» смысла нет"
+        out.append(txt)
+
+    # 2) ликвидность
+    avg = profile.get("avg_value_5d")
+    if avg:
+        mark = "жидкая" if avg >= 3_000_000 else "средняя" if avg >= 500_000 else "тонкая"
+        out.append(f"📊 Оборот 5 дн.: {_fmt_money(avg)}/день — {mark}")
+
+    # 3) история цены
+    mx, mn, dd = profile.get("max_52w"), profile.get("min_52w"), profile.get("drawdown_from_max_pct")
+    if mx and mn:
+        txt = f"📈 52 нед.: {_num(mn, 1)}–{_num(mx, 1)}%"
+        if dd is not None:
+            txt += f", сейчас {_num(dd, 1)}% от максимума"
+        out.append(txt)
+
+    # 4) личная статистика падений — самое полезное для решения
+    n = profile.get("prev_drops")
+    reb = profile.get("prev_drops_rebound_median_pct")
+    share = profile.get("prev_drops_up_share_pct")
+    if n and reb is not None:
+        verdict = ("отскакивает" if reb > 0.5 and (share or 0) >= 55
+                   else "ведёт себя непредсказуемо" if reb > -0.5
+                   else "⚠️ падения не выкупаются")
+        out.append(f"🔁 Таких падений за полгода: {n}, через 2 дня медиана "
+                   f"{reb:+.1f}%, в плюсе {share:.0f}% — {verdict}")
+
+    # 5) сроки
+    dtr = profile.get("days_to_redemption")
+    if dtr:
+        try:
+            years = float(dtr) / 365
+            if years < 3:
+                out.append(f"⏳ До погашения {int(float(dtr))} дн. (~{years:.1f} г.)")
+        except (TypeError, ValueError):
+            pass
+    offer = profile.get("offerdate") or profile.get("putoption")
+    if offer and str(offer) not in ("None", "0000-00-00"):
+        out.append(f"🚪 Оферта: {esc(str(offer))}")
+    if profile.get("amort_upcoming"):
+        out.append(f"🧩 Амортизация: {profile['amort_upcoming']} выплат тела впереди")
+    return out
+
+
 RATING_ORDER = ["AAA", "AA+", "AA", "AA-", "A+", "A", "A-", "BBB+", "BBB", "BBB-",
                 "BB+", "BB", "BB-", "B+", "B", "B-", "CCC", "CC", "C", "D"]
 
@@ -164,6 +227,8 @@ def format_tx(
     moex: dict | None = None,
     rating: str | None = None,
     show_verdict: bool = True,
+    profile: dict | None = None,
+    market: dict | None = None,
 ) -> str:
     """Одна сделка → человекочитаемый блок (HTML для Telegram)."""
     esc = html.escape if for_telegram_html else (lambda s: s)
@@ -215,6 +280,21 @@ def format_tx(
     lines.append(f"🕒 {stamp} МСК")
     lines.append(f'🔗 <a href="{asset_page_url(tx)}">карточка бумаги</a>')
 
+    # контекст сделки: где он купил относительно дня и что было с ценой потом
+    if market:
+        tr = market.get("price_in_day_range_pct")
+        if tr is not None:
+            where = ("у минимума дня" if tr < 25 else "в нижней половине дня" if tr < 55
+                     else "в верхней половине дня" if tr < 80 else "у максимума дня")
+            extra = f"· вход {where} ({_num(tr, 0)}% диапазона дня)"
+            if market.get("eod_after_pct") is not None:
+                extra += f", к концу дня {market['eod_after_pct']:+.1f}%"
+            lines.append(extra)
+
+    if profile:
+        for ln in analytics_lines(profile, price_pct=(price / nominal * 100) if (price and nominal) else None):
+            lines.append(ln)
+
     if show_verdict:
         for note in verdict_notes:
             lines.append(f"· {esc(note)}")
@@ -235,10 +315,14 @@ def format_batch(
     with_warnings: bool = True,
     moex_map: dict[str, dict] | None = None,
     rating_map: dict[str, str] | None = None,
+    profiles: dict[str, dict] | None = None,
+    market_map: dict[str, dict] | None = None,
 ) -> str:
     infos = infos or {}
     moex_map = moex_map or {}
     rating_map = rating_map or {}
+    profiles = profiles or {}
+    market_map = market_map or {}
     buys = [t for t in txs if classify(t) == BUY]
     sells = [t for t in txs if classify(t) == SELL]
     buy_sum = sum((t.get("totalPrice") or 0) for t in buys)
@@ -264,6 +348,8 @@ def format_batch(
                 with_warnings=with_warnings,
                 moex=moex_map.get(tx.get("ticker") or ""),
                 rating=rating_map.get(tx.get("ticker") or ""),
+                profile=profiles.get(tx.get("ticker") or ""),
+                market=market_map.get(tx.get("ticker") or ""),
             )
         )
         blocks.append("➖➖➖➖➖➖➖➖")

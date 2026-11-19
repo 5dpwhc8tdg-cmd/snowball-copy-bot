@@ -15,12 +15,19 @@ import argparse
 import html
 import logging
 
-from . import dipscanner, formatter, ratings as ratings_api
+from . import analytics, dipscanner, formatter, ratings as ratings_api
 from .config import Config
 from .notify import build_notifiers
 from .store import open_store
 
 log = logging.getLogger(__name__)
+
+
+def _num(value, digits: int = 1) -> str:
+    try:
+        return f"{float(value):,.{digits}f}".replace(",", " ").replace(".", ",")
+    except (TypeError, ValueError):
+        return str(value)
 
 
 def _fmt_money(v: float | None) -> str:
@@ -29,8 +36,10 @@ def _fmt_money(v: float | None) -> str:
     return f"{v:,.0f} ₽".replace(",", " ")
 
 
-def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, minutes: int) -> str:
+def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, minutes: int,
+                  profiles: dict | None = None) -> str:
     """HTML-сообщение со списком провалов."""
+    profiles = profiles or {}
     clean = [d for d in dips if not d["is_bad"]]
     bad = [d for d in dips if d["is_bad"]]
 
@@ -50,16 +59,29 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
             + (f", за {minutes} мин −{d['win_drop']:.1f}%" if d.get("win_drop") else ""),
             f"Цена {price_pct:.1f}% от номинала{rating_txt}",
         ]
-        if not clean_flag and d["reasons"]:
-            txt.append("Причина отсева: " + html.escape("; ".join(d["reasons"][:2])))
+        # НКД и «сколько стоит лот»
+        nkd = d.get("nkd")
+        if nkd:
+            nkd_share = (nkd / price_pct * 100) if price_pct else None
+            txt.append(f"НКД {_num(nkd, 2)} ₽/шт"
+                       + (f" — {_num(nkd_share, 1)}% от цены (платите сверху)" if nkd_share else ""))
+        if d.get("coupon_pct"):
+            txt.append(f"Купон {_num(d['coupon_pct'], 1)}% годовых")
+        # оборот/сделки/спред
         if clean_flag:
             txt.append(
                 f"Сделок {d['numtrades']}, оборот {_fmt_money(d['valtoday'])}"
                 + (f", спред {(d['offer'] - d['bid']) / d['bid'] * 100:.1f}%"
                    if d.get("bid") and d.get("offer") and d["bid"] > 0 else "")
             )
+        else:
+            txt.append("Причина отсева: " + html.escape("; ".join(d["reasons"][:2])))
+        # расширенная аналитика
+        for ln in formatter.analytics_lines(profiles.get(d.get("isin") or ""), price_pct=price_pct):
+            txt.append(ln)
         url = f"https://snowball-income.com/public/asset/{d['secid']}.MCX.RUB"
-        txt.append(f'🔗 <a href="{url}">карточка бумаги</a>')
+        txt.append(f'🔗 <a href="{url}">карточка</a> · '
+                   f'<a href="https://www.moex.com/ru/issue.aspx?code={d["secid"]}">MOEX</a>')
         return "\n".join(txt)
 
     if clean:
@@ -143,7 +165,17 @@ def run(cfg: Config, once: bool = True, dry_run: bool = False) -> int:
         except Exception as e:  # noqa: BLE001
             log.warning("Рейтинги недоступны: %s", e)
 
-    text = build_message(dips, rating_map, cfg, cfg.dip_window)
+    profiles: dict[str, dict] = {}
+    for d in dips:
+        isin = d.get("isin")
+        if not isin or d["is_bad"]:
+            continue
+        try:
+            profiles[isin] = analytics.full_profile(isin, store=store)
+        except Exception as e:  # noqa: BLE001
+            log.warning("Аналитика по %s недоступна: %s", isin, e)
+
+    text = build_message(dips, rating_map, cfg, cfg.dip_window, profiles)
     plain = formatter.to_plain(text)
 
     if dry_run:
