@@ -1,0 +1,57 @@
+name: Сводка дня по провалам
+
+# Вечером подводит итог: какие сигналы были за день и что было бы, если купить.
+# Считает по 10-минутным свечам MOEX: результат через 30 мин / 1 ч / 2 ч /
+# к концу дня и на 2-й день, исполнение лимита на 1% ниже, деньги на ваш капитал.
+
+on:
+  schedule:
+    - cron: "0 16 * * 1-5"      # 19:00 МСК, пн–пт
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "За сколько последних дней собрать сводку (1 — только сегодня)"
+        default: "1"
+        required: false
+      dry_run:
+        description: "Только в лог, ничего не отправлять"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: snowball-summary
+  cancel-in-progress: false
+
+jobs:
+  summary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Собрать сводку
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_COMMANDS: "0"
+          STATE_BACKEND: json
+          STATE_PATH: state/state.json
+          MY_CAPITAL: "100000"
+          OWNER_CAPITAL: "7000000"
+          MY_MAX_POSITION_PCT: "10"
+          MY_RESERVE_PCT: "20"
+          HOLD_DAYS: "2"
+          TZ_NAME: Europe/Moscow
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python3 bot.py summary --dry-run --days ${{ github.event.inputs.days || '1' }}
+          else
+            python3 bot.py summary --days ${{ github.event.inputs.days || '1' }}
+          fi

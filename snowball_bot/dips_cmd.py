@@ -236,6 +236,14 @@ def remember_cooldown(store, dips: list[dict], hours: int | None = None) -> None
     for d in dips:
         alerts[d.get("isin") or d["secid"]] = now
     store.set_meta("dip_alerts", alerts)
+
+    # журнал дня — из него вечером считается сводка
+    try:
+        from . import summary
+
+        summary.journal_add(store, dips, cfg, profiles)
+    except Exception as e:  # noqa: BLE001
+        log.warning("Не смог записать журнал сигналов: %s", e)
     try:
         store.flush()
     except Exception:  # noqa: BLE001
@@ -338,6 +346,14 @@ def run(cfg: Config, once: bool = True, dry_run: bool = False) -> int:
     for d in dips:
         alerts[d.get("isin") or d["secid"]] = now
     store.set_meta("dip_alerts", alerts)
+
+    # журнал дня — из него вечером считается сводка
+    try:
+        from . import summary
+
+        summary.journal_add(store, dips, cfg, profiles)
+    except Exception as e:  # noqa: BLE001
+        log.warning("Не смог записать журнал сигналов: %s", e)
 
     # Telegram режет сообщения на 4096 символах — отправляем частями по блокам
     chunks = formatter.split_for_limit(text, limit=3900)

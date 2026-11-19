@@ -444,6 +444,9 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="cmd")
     p_dips = sub.add_parser("dips", help="сканировать резкие падения облигаций на MOEX")
     p_dips.add_argument("--dry-run", action="store_true")
+    p_sum = sub.add_parser("summary", help="дневная сводка по сигналам: что было бы, если купить")
+    p_sum.add_argument("--dry-run", action="store_true")
+    p_sum.add_argument("--days", type=int, default=1, help="за сколько последних дней (по умолчанию 1)")
     args = parser.parse_args(argv)
 
     load_dotenv(args.env)
@@ -466,6 +469,12 @@ def main(argv: list[str] | None = None) -> int:
         from . import dips_cmd
 
         return dips_cmd.run(cfg, dry_run=getattr(args, "dry_run", False))
+
+    if getattr(args, "cmd", None) == "summary":
+        from . import summary
+
+        return summary.run(cfg, days=getattr(args, "days", 1),
+                           dry_run=getattr(args, "dry_run", False))
 
     store = open_store(cfg)
     notifiers = build_notifiers(cfg)

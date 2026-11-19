@@ -271,10 +271,22 @@ class CommandBot:
             self.cmd_cap(chat_id, arg)
         elif cmd == "plan":
             self.reply(chat_id, self.plan_text())
+        elif cmd in ("summary", "day"):
+            threading.Thread(target=self.cmd_summary, args=(chat_id,), daemon=True).start()
         elif cmd == "last":
             threading.Thread(target=self.cmd_last, args=(chat_id,), daemon=True).start()
         else:
             self.reply(chat_id, "Не понимаю команду.\n\n" + HELP)
+
+    def cmd_summary(self, chat_id: str) -> None:
+        try:
+            from snowball_bot import summary as summary_mod
+
+            self.reply(chat_id, "⏳ Считаю сводку по свечам…")
+            summary_mod.run(self.cfg, days=1, dry_run=False)
+        except Exception as e:  # noqa: BLE001
+            log.error("summary: %s", e)
+            self.reply(chat_id, f"❌ Не смог собрать сводку: {e}")
 
     def cmd_last(self, chat_id: str) -> None:
         try:
