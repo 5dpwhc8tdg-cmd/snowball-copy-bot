@@ -1,0 +1,182 @@
+"""Команда `dips`: сканер паник на рынке облигаций MOEX.
+
+Отличия от отслеживания сделок владельца портфеля:
+  * сигнал приходит по самому рынку — без задержки на публикацию сделки;
+  * сразу видно, «плохая» это бумага или просто шум (фильтры);
+  * в сообщении есть подсказка по входу/выходу и статистика отскоков.
+
+Подключение в CI (GitHub Actions): отдельный workflow, шаг
+  python3 bot.py dips --once
+Отправка тем же каналом (Telegram/MAX/консоль).
+"""
+from __future__ import annotations
+
+import argparse
+import html
+import logging
+
+from . import dipscanner, formatter, ratings as ratings_api
+from .config import Config
+from .notify import build_notifiers
+from .store import open_store
+
+log = logging.getLogger(__name__)
+
+
+def _fmt_money(v: float | None) -> str:
+    if not v:
+        return "—"
+    return f"{v:,.0f} ₽".replace(",", " ")
+
+
+def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, minutes: int) -> str:
+    """HTML-сообщение со списком провалов."""
+    clean = [d for d in dips if not d["is_bad"]]
+    bad = [d for d in dips if d["is_bad"]]
+
+    head = (f"🎯 <b>Резкие падения облигаций</b> — {len(dips)} шт. "
+            f"(«чистых»: {len(clean)})")
+    parts = [head, f"<i>MOEX, падение от максимума дня / за {minutes} мин</i>", ""]
+
+    def line(d: dict, clean_flag: bool) -> str:
+        name = html.escape(str(d.get("name") or d["secid"]))
+        price_pct = d.get("price_pct")
+        rating = rating_map.get(d.get("isin") or "")
+        rating_txt = f" · рейтинг {html.escape(rating)}" if rating else " · рейтинга A+ нет"
+        icon = "🟢" if clean_flag else "⛔"
+        txt = [
+            f"{icon} <b>{name}</b> <code>{html.escape(d['secid'])}</code>",
+            f"Падение <b>−{d['drop']:.1f}%</b> (день −{d['day_drop']:.1f}%)"
+            + (f", за {minutes} мин −{d['win_drop']:.1f}%" if d.get("win_drop") else ""),
+            f"Цена {price_pct:.1f}% от номинала{rating_txt}",
+        ]
+        if not clean_flag and d["reasons"]:
+            txt.append("Причина отсева: " + html.escape("; ".join(d["reasons"][:2])))
+        if clean_flag:
+            txt.append(
+                f"Сделок {d['numtrades']}, оборот {_fmt_money(d['valtoday'])}"
+                + (f", спред {(d['offer'] - d['bid']) / d['bid'] * 100:.1f}%"
+                   if d.get("bid") and d.get("offer") and d["bid"] > 0 else "")
+            )
+        url = f"https://snowball-income.com/public/asset/{d['secid']}.MCX.RUB"
+        txt.append(f'🔗 <a href="{url}">карточка бумаги</a>')
+        return "\n".join(txt)
+
+    if clean:
+        parts.append("✅ <b>Похоже на панику, а не на дефолт</b>")
+        parts.append("")
+        for d in clean:
+            parts.append(line(d, True))
+            parts.append("➖➖➖➖➖➖➖➖")
+    if bad:
+        parts.append("")
+        parts.append("⛔ <b>Отсеяно (не покупать в падении)</b>")
+        for d in bad[:10]:
+            parts.append(line(d, False))
+            parts.append("")
+
+    parts.append(
+        "📌 <i>Напоминание: по замерам на этом портфеле медианный отскок через 2 часа "
+        "+1,3%, но при входе с задержкой 10 минут — только +0,1%. Ловить нужно «в моменте», "
+        "и лучше лимитной заявкой ниже рынка.</i>"
+    )
+    return "\n".join(parts)
+
+
+def run(cfg: Config, once: bool = True, dry_run: bool = False) -> int:
+    store = open_store(cfg)
+    notifiers = build_notifiers(cfg)
+
+    moex_flags: dict[str, dict] = {}
+    rating_map: dict[str, str] = {}
+
+    dips = dipscanner.find_dips(
+        store,
+        moex_flags=moex_flags,
+        min_drop_pct=cfg.dip_min_drop,
+        window_minutes=cfg.dip_window,
+        day_drop_pct=cfg.dip_day_drop,
+        min_price_pct=cfg.dip_min_price_pct,
+        min_trades=cfg.dip_min_trades,
+        min_value=cfg.dip_min_value,
+    )
+    if not dips:
+        log.info("Падений не найдено")
+        store.close()
+        return 0
+
+    # антиспам: не повторять сигнал по одной бумаге чаще, чем раз в N часов
+    import time as _time
+
+    alerts = store.get_meta("dip_alerts", {}) or {}
+    cooldown = cfg.dip_cooldown_hours * 3600
+    now = _time.time()
+    fresh, repeated = [], 0
+    for d in dips:
+        key = d.get("isin") or d["secid"]
+        if cooldown and now - float(alerts.get(key, 0)) < cooldown:
+            repeated += 1
+            continue
+        fresh.append(d)
+    if repeated:
+        log.info("Пропущено %d повторных сигналов (кулдаун %d ч)", repeated, cfg.dip_cooldown_hours)
+    dips = fresh
+    if not dips:
+        store.close()
+        return 0
+
+    if cfg.dip_only_clean:
+        clean_only = [d for d in dips if not d["is_bad"]]
+        if not clean_only:
+            log.info("Сигналы есть, но все отсеяны фильтрами (DIP_ONLY_CLEAN=1)")
+            store.close()
+            return 0
+        dips = clean_only
+
+    # рейтинги — только для кандидатов, чтобы сообщение было информативнее
+    if cfg.check_qualified:
+        try:
+            full = ratings_api.get_rating_map(store)
+            for d in dips:
+                if d.get("isin") in full:
+                    rating_map[d["isin"]] = full[d["isin"]]
+        except Exception as e:  # noqa: BLE001
+            log.warning("Рейтинги недоступны: %s", e)
+
+    text = build_message(dips, rating_map, cfg, cfg.dip_window)
+    plain = formatter.to_plain(text)
+
+    if dry_run:
+        print(plain)
+        store.close()
+        return len(dips)
+
+    for d in dips:
+        alerts[d.get("isin") or d["secid"]] = now
+    store.set_meta("dip_alerts", alerts)
+
+    sent = False
+    for n in notifiers:
+        try:
+            sent |= n.send(text, plain)
+        except Exception as e:  # noqa: BLE001
+            log.error("Отправка (%s) не удалась: %s", n.name, e)
+    if not sent:
+        log.error("Не удалось отправить сигнал")
+    store.close()
+    return len(dips)
+
+
+def main(argv: list[str] | None = None) -> int:
+    from .config import load_dotenv
+
+    ap = argparse.ArgumentParser(description="Сканер резких падений облигаций")
+    ap.add_argument("--dry-run", action="store_true")
+    args = ap.parse_args(argv)
+    load_dotenv()
+    cfg = Config()
+    return run(cfg, once=True, dry_run=args.dry_run)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

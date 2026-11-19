@@ -376,6 +376,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true", help="показать сообщение в консоли, не отправлять")
     parser.add_argument("--test-notify", action="store_true", help="проверить каналы доставки")
     parser.add_argument("--env", default=".env", help="путь к .env")
+    sub = parser.add_subparsers(dest="cmd")
+    p_dips = sub.add_parser("dips", help="сканировать резкие падения облигаций на MOEX")
+    p_dips.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
 
     load_dotenv(args.env)
@@ -385,6 +388,11 @@ def main(argv: list[str] | None = None) -> int:
     log.info("Портфель: %s (%s)", cfg.portfolio_title, cfg.portfolio_id)
     log.info("Каналы: %s", ", ".join(cfg.channels()))
     log.info("Интервал опроса: %s сек", cfg.poll_interval)
+
+    if getattr(args, "cmd", None) == "dips":
+        from . import dips_cmd
+
+        return dips_cmd.run(cfg, dry_run=getattr(args, "dry_run", False))
 
     store = open_store(cfg)
     notifiers = build_notifiers(cfg)

@@ -92,6 +92,17 @@ class Config:
 
     console: bool = field(default_factory=lambda: _env_bool("CONSOLE_OUTPUT", False))
 
+    # --- сканер резких падений (dips) -------------------------------------
+    dip_enabled: bool = field(default_factory=lambda: _env_bool("DIP_ENABLED", True))
+    dip_min_drop: float = field(default_factory=lambda: _env_float("DIP_MIN_DROP", 4.0))
+    dip_day_drop: float = field(default_factory=lambda: _env_float("DIP_DAY_DROP", 3.0))
+    dip_window: int = field(default_factory=lambda: _env_int("DIP_WINDOW", 30))
+    dip_min_price_pct: float = field(default_factory=lambda: _env_float("DIP_MIN_PRICE_PCT", 70))
+    dip_min_trades: int = field(default_factory=lambda: _env_int("DIP_MIN_TRADES", 5))
+    dip_min_value: float = field(default_factory=lambda: _env_float("DIP_MIN_VALUE", 30000))
+    dip_only_clean: bool = field(default_factory=lambda: _env_bool("DIP_ONLY_CLEAN", True))
+    dip_cooldown_hours: int = field(default_factory=lambda: _env_int("DIP_COOLDOWN_HOURS", 6))
+
     # --- где хранить состояние -------------------------------------------
     # sqlite (VPS/домашний ПК) или json (GitHub Actions: файл коммитится в репозиторий)
     state_backend: str = field(default_factory=lambda: _env("STATE_BACKEND", "sqlite").lower())

@@ -1,0 +1,72 @@
+name: Сканер падений (dips)
+
+# Ловит резкие провалы облигаций на MOEX в реальном времени (по рынку, а не по
+# публикации сделок владельца портфеля). Работает в торговые часы МСК.
+on:
+  schedule:
+    - cron: "*/15 6-15 * * 1-5"   # 09:00–18:45 МСК, пн–пт (UTC+3)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Только показать в логе, ничего не отправлять"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: snowball-dips
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Сканировать падения
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_COMMANDS: "0"
+          STATE_BACKEND: json
+          STATE_PATH: state/state.json
+          CHECK_QUALIFIED: "1"
+          DIP_MIN_DROP: "4.0"
+          DIP_DAY_DROP: "3.0"
+          DIP_WINDOW: "30"
+          DIP_MIN_PRICE_PCT: "70"
+          DIP_MIN_TRADES: "5"
+          DIP_MIN_VALUE: "30000"
+          DIP_ONLY_CLEAN: "1"
+          DIP_COOLDOWN_HOURS: "6"
+          TZ_NAME: Europe/Moscow
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python3 bot.py dips --dry-run
+          else
+            python3 bot.py dips
+          fi
+
+      - name: Сохранить состояние (кулдаун сигналов, кэш рейтингов)
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          set -e
+          if [ -z "$(git status --porcelain state)" ]; then
+            echo "Состояние не изменилось"
+            exit 0
+          fi
+          git config user.name  "snowball-bot"
+          git config user.email "snowball-bot@users.noreply.github.com"
+          git add state
+          git commit -m "dips state: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          for i in 1 2 3; do
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
+            git push && break || sleep 5
+          done
