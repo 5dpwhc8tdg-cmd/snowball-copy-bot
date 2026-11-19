@@ -107,7 +107,10 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
     if clean:
         parts.append("✅ <b>Похоже на панику, а не на дефолт</b>")
         parts.append("")
-        for d in clean:
+        if len(clean) > 6:
+            parts.append(f"<i>(показываю 6 сильнейших из {len(clean)})</i>")
+            parts.append("")
+        for d in clean[:6]:
             parts.append(line(d, True))
             parts.append("➖➖➖➖➖➖➖➖")
     if bad:
@@ -221,12 +224,15 @@ def run(cfg: Config, once: bool = True, dry_run: bool = False) -> int:
         alerts[d.get("isin") or d["secid"]] = now
     store.set_meta("dip_alerts", alerts)
 
+    # Telegram режет сообщения на 4096 символах — отправляем частями по блокам
+    chunks = formatter.split_for_limit(text, limit=3900)
     sent = False
     for n in notifiers:
-        try:
-            sent |= n.send(text, plain)
-        except Exception as e:  # noqa: BLE001
-            log.error("Отправка (%s) не удалась: %s", n.name, e)
+        for chunk in chunks:
+            try:
+                sent |= n.send(chunk, formatter.to_plain(chunk))
+            except Exception as e:  # noqa: BLE001
+                log.error("Отправка (%s) не удалась: %s", n.name, e)
     if not sent:
         log.error("Не удалось отправить сигнал")
         store.close()
