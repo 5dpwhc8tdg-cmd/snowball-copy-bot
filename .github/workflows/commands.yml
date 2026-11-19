@@ -34,6 +34,9 @@ jobs:
       - name: Зависимости
         run: pip install --quiet python-dotenv
 
+      - name: Проверить, что справка и команды совпадают
+        run: python3 check_commands.py
+
       - name: Слушать команды
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}

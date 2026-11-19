@@ -48,6 +48,9 @@ HELP = (
     "/last — 5 последних сделок с аналитикой и размером под ваш капитал\n"
     "/cap 120000 — изменить ваш капитал, ₽\n"
     "/plan — раскладка капитала (резерв, бюджет идеи, число идей)\n"
+    "/summary — сводка дня: что было бы, если купить по сегодняшним сигналам\n"
+    "/mute — пауза уведомлений на 2 часа\n"
+    "/unmute — снять паузу\n"
     "/help — эта справка"
 )
 
@@ -271,6 +274,15 @@ class CommandBot:
             self.cmd_cap(chat_id, arg)
         elif cmd == "plan":
             self.reply(chat_id, self.plan_text())
+        elif cmd == "mute":
+            self.store.set_meta("mute_until", int(time.time()) + 7200)
+            self.store.flush()
+            self.reply(chat_id, "🔇 Уведомления о сделках на паузе 2 часа "
+                                "(сигналы о падениях продолжат приходить).")
+        elif cmd == "unmute":
+            self.store.set_meta("mute_until", 0)
+            self.store.flush()
+            self.reply(chat_id, "🔔 Уведомления включены.")
         elif cmd in ("summary", "day"):
             threading.Thread(target=self.cmd_summary, args=(chat_id,), daemon=True).start()
         elif cmd == "last":
