@@ -12,6 +12,8 @@
 from __future__ import annotations
 
 import argparse
+import os
+from datetime import datetime
 import html
 import logging
 
@@ -36,6 +38,68 @@ def _fmt_money(v: float | None) -> str:
     return f"{v:,.0f} ₽".replace(",", " ")
 
 
+SESSION_END = os.environ.get("DIP_SESSION_END", "23:50")   # конец торгов МСК (включая вечернюю)
+MAIN_SESSION_END = os.environ.get("DIP_MAIN_SESSION_END", "18:39")
+
+
+def _minutes_to_close(now: datetime | None = None) -> int | None:
+    """Сколько минут до конца торгов (полная сессия MOEX, МСК)."""
+    return _minutes_to(now, SESSION_END)
+
+
+def _minutes_to(now: datetime | None, hhmm: str) -> int | None:
+    now = now or datetime.now()
+    try:
+        hh, mm = (int(x) for x in hhmm.split(":"))
+    except ValueError:
+        return None
+    end = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+    return int((end - now).total_seconds() // 60)
+
+
+def _timing_lines(d: dict) -> list[str]:
+    """⏱ Когда именно случился скачок и успеваете ли вы."""
+    tm = d.get("timing") or {}
+    out: list[str] = []
+    peak_t, low_t = tm.get("peak_time"), tm.get("low_time")
+    since_low = tm.get("minutes_since_low")
+
+    if peak_t and low_t:
+        line = f"⏱ Скачок: <b>{peak_t} → {low_t}</b>"
+        if since_low is not None:
+            line += f" (дно {since_low} мин назад)"
+        out.append(line)
+
+    last_t, age = tm.get("last_data_time"), tm.get("data_age_min")
+    now = dipscanner.now_msk()
+    if last_t:
+        age_txt = f", {age} мин назад" if isinstance(age, int) and age >= 0 else ""
+        out.append(f"🕐 Данные с биржи: по <b>{last_t}</b>{age_txt} · сейчас {now:%H:%M}")
+
+    left = _minutes_to_close(now)
+    main_left = _minutes_to(now, MAIN_SESSION_END)
+    if left is not None and left > 0:
+        if main_left is not None and main_left <= 0:
+            out.append(f"⏳ Основная сессия закрыта, идёт вечерняя — до конца {left // 60} ч "
+                       f"{left % 60:02d} мин, ликвидность ниже")
+        else:
+            out.append(f"⏳ До конца торгов {left // 60} ч {left % 60:02d} мин")
+    elif left is not None:
+        out.append("⏳ Торги закрыты — заявку поставите утром, цена может уйти")
+
+    # успеваете ли и не откупили ли уже
+    rec = tm.get("recovered_pct")
+    if since_low is not None and since_low > 30:
+        tail = f", от дна уже +{_num(rec, 1)}%" if rec is not None and rec > 0 else ""
+        out.append(f"⚠️ Скачок был {since_low} мин назад{tail} — отскок обычно в первые 30 мин, "
+                   f"заходить уже позднее")
+    elif since_low is not None and rec is not None and rec > 1.0:
+        out.append(f"⚠️ От дна уже откупили +{_num(rec, 1)}% — вход хуже, чем был")
+    elif since_low is not None:
+        out.append("✅ Скачок свежий — вы успеваете поставить лимитную заявку")
+    return out
+
+
 def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, minutes: int,
                   profiles: dict | None = None) -> str:
     """HTML-сообщение со списком провалов."""
@@ -53,7 +117,11 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
             f"{max_ideas} идей, резерв {_fmt_money(reserve)}</i>")
     if not cfg.only_rating_a_plus:
         plan += "\n<i>Без теста неквала берите только выпуски с рейтингом A+ (у остальных — максимум 100 тыс. ₽ по «праву последнего слова»)</i>"
-    parts = [head, f"<i>MOEX, падение от максимума дня / за {minutes} мин</i>", plan, ""]
+    now_txt = dipscanner.now_msk().strftime("%H:%M")
+    parts = [head,
+             f"<i>MOEX, падение от максимума дня / за {minutes} мин · "
+             f"сигнал собран в {now_txt} МСК</i>",
+             plan, ""]
 
     def line(d: dict, clean_flag: bool) -> str:
         name = html.escape(str(d.get("name") or d["secid"]))
@@ -67,10 +135,14 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
             + (f", за {minutes} мин −{d['win_drop']:.1f}%" if d.get("win_drop") else ""),
             f"Цена {price_pct:.1f}% от номинала{rating_txt}",
         ]
-        # НКД и «сколько стоит лот»
+        if clean_flag:
+            txt.extend(_timing_lines(d))
+        # НКД и «сколько стоит лот» (НКД в рублях → в % от рублёвой цены лота)
         nkd = d.get("nkd")
+        face = d.get("facevalue") or 1000
+        rub_now = (price_pct / 100) * face if price_pct else 0
         if nkd:
-            nkd_share = (nkd / price_pct * 100) if price_pct else None
+            nkd_share = (nkd / rub_now * 100) if rub_now else None
             txt.append(f"НКД {_num(nkd, 2)} ₽/шт"
                        + (f" — {_num(nkd_share, 1)}% от цены (платите сверху)" if nkd_share else ""))
         if d.get("coupon_pct"):
@@ -85,8 +157,7 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
         else:
             txt.append("Причина отсева: " + html.escape("; ".join(d["reasons"][:2])))
         # сколько брать мне: считаем от доли капитала, лоты в рублях
-        face = d.get("facevalue") or 1000
-        rub_price = (price_pct / 100) * face if price_pct else 0
+        rub_price = rub_now
         if rub_price and cfg.my_capital:
             budget = cfg.my_capital * cfg.my_max_position_pct / 100
             lots = max(1, int(budget // (rub_price + (nkd or 0))))

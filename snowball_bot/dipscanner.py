@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -97,7 +98,11 @@ def fetch_snapshot() -> dict[str, dict]:
 # Падение за последние N минут — по 10-минутным свечам MOEX (без раздувания state)
 # ---------------------------------------------------------------------------
 def intraday_drop(isin: str, minutes: int = 30) -> dict | None:
-    """Падение от локального максимума закрытий до последнего закрытия."""
+    """Падение от локального максимума закрытий до последнего закрытия.
+
+    Возвращает и *время* скачка: когда был локальный максимум, когда — минимум,
+    сколько минут назад это случилось (по времени биржевых свечей, МСК).
+    """
     today = datetime.now().strftime("%Y-%m-%d")
     url = (f"{ISS}/engines/stock/markets/bonds/securities/{isin}/candles.json"
            f"?iss.meta=off&interval=10&from={today}")
@@ -115,16 +120,74 @@ def intraday_drop(isin: str, minutes: int = 30) -> dict | None:
     # окно: свечи, попавшие в последние `minutes` минут (интервал 10 мин → N/10 свечей, минимум 2)
     n = max(2, minutes // 10)
     window = cs[-n:]
-    peak = max(c["close"] for c in window)
+    peak_c = max(window, key=lambda c: c["close"])
+    peak = peak_c["close"]
     cur = window[-1]["close"]
     prev_day_peak = max(c["close"] for c in cs)
+
+    # время скачка: от дневного максимума до минимума ПОСЛЕ него (тот же %, что в сообщении)
+    day_peak_c = max(cs, key=lambda c: c["close"])
+    day_peak_dt = _candle_dt(day_peak_c)
+    after = [c for c in cs if day_peak_dt and _candle_dt(c) and _candle_dt(c) >= day_peak_dt]
+    low_c = min(after, key=lambda c: c["close"]) if after else cs[-1]
+    drop_pct = (prev_day_peak - low_c["close"]) / prev_day_peak * 100 if prev_day_peak else None
+
+    now = now_msk()
+    # свежесть данных: последняя свеча + её 10-минутный интервал
+    last_dt = _candle_dt(cs[-1])
+    data_age = None
+    if last_dt:
+        data_age = max(0, int((now - last_dt).total_seconds() // 60) - 10)
+
     return {
         "win_drop": (peak - cur) / peak * 100 if peak else None,
         "win_peak": peak,
         "cur": cur,
         "day_peak_close": prev_day_peak,
         "candles": len(cs),
+        # --- тайминг ---
+        "peak_time": _candle_str(day_peak_c),
+        "low_time": _candle_str(low_c),
+        "minutes_since_peak": _minutes_since(day_peak_dt, now),
+        "minutes_since_low": _minutes_since(_candle_dt(low_c), now),
+        "low_price": low_c["close"],
+        "recovered_pct": (cur - low_c["close"]) / low_c["close"] * 100 if low_c["close"] else None,
+        "drop_from_peak_pct": drop_pct,
+        "last_data_time": _candle_str(cs[-1]),
+        "data_age_min": data_age,
     }
+
+
+def now_msk() -> datetime:
+    """Текущее время МСК (свечи MOEX отдаёт в московском времени)."""
+    try:
+        from zoneinfo import ZoneInfo
+
+        return datetime.now(ZoneInfo("Europe/Moscow")).replace(tzinfo=None)
+    except Exception:  # noqa: BLE001
+        return datetime.now()
+
+
+def _candle_dt(c: dict) -> datetime | None:
+    """Время свечи MOEX (поле `begin`, МСК без таймзоны)."""
+    raw = c.get("begin")
+    if not raw:
+        return None
+    try:
+        return datetime.fromisoformat(str(raw).replace(" ", "T")[:19])
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _candle_str(c: dict) -> str | None:
+    dt = _candle_dt(c)
+    return dt.strftime("%H:%M") if dt else None
+
+
+def _minutes_since(dt: datetime | None, now: datetime) -> int | None:
+    if not dt:
+        return None
+    return max(0, int((now - dt).total_seconds() // 60))
 
 
 # ---------------------------------------------------------------------------
@@ -176,6 +239,26 @@ def drop_since(series: list, minutes: int) -> tuple[float | None, float | None, 
     return (peak - cur) / peak * 100, peak, len(window)
 
 
+def sane_day_high(row: dict) -> float | None:
+    """Дневной максимум, очищенный от битых тиков MOEX.
+
+    Пример реального бага: у ВТБ Б1-385 MOEX отдаёт HIGH=140,33, тогда как
+    open/high/last стоят около 100 — это ошибка в данных, и из неё получается
+    фиктивное «падение на 28%». Поэтому сверяем максимум с медианой цен дня:
+    если он выбивается больше чем на 12% — берём максимум из open/last/low.
+    """
+    vals = [v for v in (row.get("open"), row.get("low"), row.get("last")) if v]
+    if not vals:
+        return row.get("high")
+    med = sorted(vals)[len(vals) // 2]
+    high = row.get("high")
+    if high and med and high / med <= 1.12:
+        return high
+    log.info("%s: дневной максимум %.2f выглядит битым (остальные цены ~%.2f) — игнорирую",
+             row.get("secid"), high or 0, med)
+    return max([med] + [v for v in vals if v])
+
+
 # ---------------------------------------------------------------------------
 # Главная функция: найти интересные провалы
 # ---------------------------------------------------------------------------
@@ -206,7 +289,8 @@ def find_dips(
         price_pct = last
 
         # падение внутри дня (от максимума) и падение за окно по истории
-        day_drop = ((row["high"] - last) / row["high"] * 100) if row.get("high") else 0.0
+        day_high = sane_day_high(row)
+        day_drop = ((day_high - last) / day_high * 100) if day_high else 0.0
         win_drop, peak, points = drop_since(series_all.get(secid, []), window_minutes)
 
         drop = max(day_drop, win_drop or 0.0)
@@ -255,4 +339,27 @@ def find_dips(
             "flags": flags,
         })
     out.sort(key=lambda x: -x["drop"])
+
+    # Тайминг: для сильнейших чистых кандидатов тянем 10-минутные свечи — оттуда
+    # точное время скачка, сколько минут назад он был и успели ли цену откупить.
+    timing_budget = int(os.environ.get("DIP_TIMING_PROBES", "8"))
+    clean = [c for c in out if not c["is_bad"] and c.get("isin")]
+    for cand in clean[:timing_budget]:
+        if not cand.get("isin"):
+            continue
+        try:
+            tm = intraday_drop(cand["isin"], minutes=window_minutes)
+        except Exception as e:  # noqa: BLE001
+            log.debug("тайминг %s: %s", cand["secid"], e)
+            continue
+        if tm:
+            cand["timing"] = tm
+            # сверка со свечами: если по ним падения от дневного пика нет — сигнал ложный
+            real_drop = tm.get("drop_from_peak_pct")
+            if real_drop is not None and real_drop < min_drop_pct * 0.75:
+                log.info("%s: по свечам падение всего %.1f%% (в снимке %.1f%%) — ложный сигнал, пропускаю",
+                         cand["secid"], real_drop, cand["drop"])
+                cand["is_bad"] = True
+                cand["reasons"] = [f"по биржевым свечам падения нет (всего {real_drop:.1f}%) — "
+                                   f"снимок MOEX дал битую цену"]
     return out
