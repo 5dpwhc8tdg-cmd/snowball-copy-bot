@@ -65,6 +65,19 @@
    },
    "updated_at": 1794941582
   },
+  "RU000A10BJL4": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2028-04-20",
+    "name": "Транспортная ЛК 001P-02",
+    "nominal": 1000,
+    "price": 716.55696,
+    "price_pct_of_nominal": 71.7,
+    "rating": null,
+    "ytm": 28.69297306579932
+   },
+   "updated_at": 1795130279
+  },
   "RU000A10BNM4": {
    "payload": {
     "is_qualified_only": null,
@@ -220,6 +233,19 @@
     "ytm": 55.569588983856
    },
    "updated_at": 1795047595
+  },
+  "RU000A10E6J7": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2027-07-24",
+    "name": "Страна Девелопмент 002Р-02",
+    "nominal": 1000,
+    "price": 947.3,
+    "price_pct_of_nominal": 94.7,
+    "rating": null,
+    "ytm": 34.30349857497953
+   },
+   "updated_at": 1795130276
   },
   "RU000A10EHB3": {
    "payload": {
@@ -96350,6 +96376,24 @@
    },
    "updated_at": 1795082285
   },
+  "moex:RU000A10BJL4": {
+   "payload": {
+    "bond_subtype": "До оферты (put)",
+    "bond_type": "Амортизируемая облигация",
+    "coupon_details": null,
+    "facevalue": "750.4",
+    "group": "Облигации",
+    "has_default": false,
+    "has_tech_default": false,
+    "is_qualified_only": false,
+    "isin": "RU000A10BJL4",
+    "list_level": 3,
+    "matdate": "2028-04-20",
+    "name": "Транспортная ЛК 001P-02",
+    "shortname": "ТЛК 1Р2"
+   },
+   "updated_at": 1795130281
+  },
   "moex:RU000A10C741": {
    "payload": {
     "bond_subtype": "До оферты (put)",
@@ -96421,6 +96465,24 @@
     "shortname": "БалтЛизП22"
    },
    "updated_at": 1795082286
+  },
+  "moex:RU000A10E6J7": {
+   "payload": {
+    "bond_subtype": "До погашения",
+    "bond_type": "Облигация с фиксированным (известным) купоном",
+    "coupon_details": "Фиксированный с известными купонами",
+    "facevalue": "1000",
+    "group": "Облигации",
+    "has_default": false,
+    "has_tech_default": true,
+    "is_qualified_only": false,
+    "isin": "RU000A10E6J7",
+    "list_level": 3,
+    "matdate": "2027-07-24",
+    "name": "Страна Девелопмент 002Р-02",
+    "shortname": "Страна2Р2"
+   },
+   "updated_at": 1795130280
   },
   "moex:RU000A10GLD6": {
    "payload": {
@@ -96885,6 +96947,32 @@
    },
    "updated_at": 1795107056
   },
+  "profile:RU000A10BJL4": {
+   "payload": {
+    "amort_count": 20,
+    "amort_upcoming": 14,
+    "avg_value_5d": 333348.084,
+    "bond_subtype": "До оферты (put)",
+    "calloption": null,
+    "coupon_count": 20,
+    "coupon_details": null,
+    "coupon_period_days": null,
+    "days_history": 171,
+    "days_to_redemption": "517",
+    "drawdown_from_max_pct": -4.862010560924588,
+    "has_prospectus": "0",
+    "max_52w": 100.37,
+    "min_52w": 95.49,
+    "next_amort_date": "2026-11-27",
+    "next_coupon_date": "2026-11-27",
+    "next_coupon_days": 7,
+    "next_coupon_pct": 24.0,
+    "next_coupon_value": 14.8,
+    "offerdate": null,
+    "putoption": null
+   },
+   "updated_at": 1795130292
+  },
   "profile:RU000A10BQM7": {
    "payload": {
     "amort_count": 1,
@@ -96913,6 +97001,35 @@
     "putoption": null
    },
    "updated_at": 1795090977
+  },
+  "profile:RU000A10C741": {
+   "payload": {
+    "amort_count": 1,
+    "amort_upcoming": 1,
+    "avg_value_5d": 6194744.64,
+    "bond_subtype": "До оферты (put)",
+    "calloption": null,
+    "coupon_count": 20,
+    "coupon_details": "Фиксированный с неизвестными купонами",
+    "coupon_period_days": null,
+    "days_history": 171,
+    "days_to_redemption": "601",
+    "drawdown_from_max_pct": -9.98199639927986,
+    "has_prospectus": "1",
+    "max_52w": 99.98,
+    "min_52w": 87.8,
+    "next_amort_date": "2028-07-13",
+    "next_coupon_date": "2026-11-21",
+    "next_coupon_days": 1,
+    "next_coupon_pct": 21.0,
+    "next_coupon_value": 17.26,
+    "offerdate": null,
+    "prev_drops": 5,
+    "prev_drops_rebound_median_pct": 1.6034501824615597,
+    "prev_drops_up_share_pct": 80.0,
+    "putoption": null
+   },
+   "updated_at": 1795130284
   },
   "profile:RU000A10CM14": {
    "payload": {
@@ -97113,6 +97230,32 @@
     "putoption": null
    },
    "updated_at": 1795107097
+  },
+  "profile:RU000A10E6J7": {
+   "payload": {
+    "amort_count": 1,
+    "amort_upcoming": 1,
+    "avg_value_5d": 5000329.12,
+    "bond_subtype": "До погашения",
+    "calloption": null,
+    "coupon_count": 18,
+    "coupon_details": "Фиксированный с известными купонами",
+    "coupon_period_days": null,
+    "days_history": 171,
+    "days_to_redemption": "246",
+    "drawdown_from_max_pct": -8.455740239659837,
+    "has_prospectus": "1",
+    "max_52w": 103.48,
+    "min_52w": 94.59,
+    "next_amort_date": "2027-07-24",
+    "next_coupon_date": "2026-11-26",
+    "next_coupon_days": 6,
+    "next_coupon_pct": 25.25,
+    "next_coupon_value": 20.75,
+    "offerdate": null,
+    "putoption": null
+   },
+   "updated_at": 1795130288
   },
   "profile:RU000A10E6S8": {
    "payload": {
@@ -98973,6 +99116,9 @@
   "01a1f31b-f9e1-701e-bc31-db19ab44c1af": 1795082284,
   "01a1f31c-39a4-7038-9787-2b5b9fa89687": 1795082284,
   "01a1f369-0401-7288-ad2e-e07d9033b31d": 1795085554,
-  "01a1f3b4-fda8-73b7-b1a6-d207a0a56eff": 1795098150
+  "01a1f3b4-fda8-73b7-b1a6-d207a0a56eff": 1795098150,
+  "01a1f44f-63db-7230-8c2e-c7e00f88abda": 1795130274,
+  "01a1f546-e92e-7b92-9954-5563f675b63c": 1795130274,
+  "01a1f54f-eb85-757e-b00c-4ae6fbb53d92": 1795130274
  }
 }
