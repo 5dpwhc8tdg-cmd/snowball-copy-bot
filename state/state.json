@@ -8512,6 +8512,64 @@
    },
    "updated_at": 1795069615
   },
+  "profile:RU000A103C53": {
+   "payload": {
+    "amort_count": 1,
+    "amort_upcoming": 1,
+    "avg_value_5d": 250100.6,
+    "bond_subtype": "До оферты (put)",
+    "calloption": null,
+    "coupon_count": 20,
+    "coupon_details": "Фиксированный с неизвестными купонами",
+    "coupon_period_days": null,
+    "days_history": 166,
+    "days_to_redemption": "1674",
+    "drawdown_from_max_pct": -4.02091254752852,
+    "has_prospectus": "1",
+    "max_52w": 105.2,
+    "min_52w": 100.6,
+    "next_amort_date": "2031-06-20",
+    "next_coupon_date": "2026-12-25",
+    "next_coupon_days": 35,
+    "next_coupon_pct": 18.6,
+    "next_coupon_value": 92.75,
+    "offerdate": null,
+    "prev_drops": 1,
+    "prev_drops_rebound_median_pct": 1.0813492063492098,
+    "prev_drops_up_share_pct": 100.0,
+    "putoption": null
+   },
+   "updated_at": 1795076753
+  },
+  "profile:RU000A10DLC5": {
+   "payload": {
+    "amort_count": 1,
+    "amort_upcoming": 1,
+    "avg_value_5d": 2977872.04,
+    "bond_subtype": "До погашения",
+    "calloption": null,
+    "coupon_count": 20,
+    "coupon_details": "Фиксированный с известными купонами",
+    "coupon_period_days": null,
+    "days_history": 169,
+    "days_to_redemption": "722",
+    "drawdown_from_max_pct": -12.340661370774061,
+    "has_prospectus": "0",
+    "max_52w": 108.26,
+    "min_52w": 92.21,
+    "next_amort_date": "2028-11-10",
+    "next_coupon_date": "2026-11-21",
+    "next_coupon_days": 1,
+    "next_coupon_pct": 25.0,
+    "next_coupon_value": 20.55,
+    "offerdate": null,
+    "prev_drops": 4,
+    "prev_drops_rebound_median_pct": 1.1227625609767298,
+    "prev_drops_up_share_pct": 50.0,
+    "putoption": null
+   },
+   "updated_at": 1795076758
+  },
   "ratings:map": {
    "payload": {
     "map": {
