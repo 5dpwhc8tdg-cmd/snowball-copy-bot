@@ -69,6 +69,16 @@ class Config:
     ignore_tickers: list[str] = field(default_factory=lambda: [t.upper() for t in _env_list("IGNORE_TICKERS")])
     include_income: bool = field(default_factory=lambda: _env_bool("INCLUDE_INCOME", False))
     copy_scale: float = field(default_factory=lambda: _env_float("COPY_SCALE", 0))  # 0 = не пересчитывать
+    # ваш капитал и капитал владельца портфеля — бот сам считает масштаб
+    my_capital: float = field(default_factory=lambda: _env_float("MY_CAPITAL", 100000))
+    owner_capital: float = field(default_factory=lambda: _env_float("OWNER_CAPITAL", 7000000))
+    # максимум на одну идею в % вашего капитала и резерв
+    my_max_position_pct: float = field(default_factory=lambda: _env_float("MY_MAX_POSITION_PCT", 10))
+    my_reserve_pct: float = field(default_factory=lambda: _env_float("MY_RESERVE_PCT", 20))
+    # режим «берём только то, что неквал может купить без теста»
+    only_rating_a_plus: bool = field(default_factory=lambda: _env_bool("ONLY_RATING_A_PLUS", False))
+    # для копирования провалов: держим идею 1-3 дня (по разбору его стратегии)
+    hold_days: int = field(default_factory=lambda: _env_int("HOLD_DAYS", 2))
     asset_details: bool = field(default_factory=lambda: _env_bool("ASSET_DETAILS", True))
     # проверять доступность неквалу: MOEX-флаги + рейтинг (нужен ли тест)
     check_qualified: bool = field(default_factory=lambda: _env_bool("CHECK_QUALIFIED", True))

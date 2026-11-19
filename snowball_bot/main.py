@@ -12,7 +12,7 @@ import traceback
 import urllib.request
 import json
 
-from . import analytics, api, formatter, moex as moex_api, ratings as ratings_api
+from . import analytics, api, formatter, moex as moex_api, ratings as ratings_api, sizing
 from .config import Config, load_dotenv
 from .notify import Notifier, build_notifiers
 from .store import Store, open_store
@@ -214,6 +214,18 @@ def check_once(cfg: Config, store: Store, notifiers: list[Notifier], dry_run: bo
     infos = enrich(cfg, store, list(exchange_hint.keys()), exchange_hint)
     moex_map, rating_map = enrich_moex(cfg, store, filtered)
 
+    sizes = {}
+    for tx in filtered:
+        price_unit = tx.get("price") or 0
+        sizes[tx.get("id")] = sizing.compute(
+            his_qty=tx.get("amount") or 0,
+            price_per_unit=price_unit,
+            nkd_per_unit=tx.get("nkd") or 0,
+            my_capital=cfg.my_capital,
+            his_capital=cfg.owner_capital,
+            max_position_pct=cfg.my_max_position_pct,
+        )
+
     profiles: dict[str, dict] = {}
     market_map: dict[str, dict] = {}
     if cfg.asset_details:
@@ -250,12 +262,13 @@ def check_once(cfg: Config, store: Store, notifiers: list[Notifier], dry_run: bo
         tz=cfg.tz,
         portfolio_title=cfg.portfolio_title,
         portfolio_url=cfg.snowball_url,
-        copy_scale=cfg.copy_scale,
+        copy_scale=(cfg.my_capital or cfg.copy_scale),
         infos=infos,
         moex_map=moex_map,
         rating_map=rating_map,
         profiles=profiles,
         market_map=market_map,
+        sizes=sizes,
     )
     plain_text = formatter.to_plain(html_text)
 

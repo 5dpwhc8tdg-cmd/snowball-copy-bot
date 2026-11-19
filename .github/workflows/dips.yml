@@ -46,6 +46,14 @@ jobs:
           DIP_MIN_VALUE: "30000"
           DIP_ONLY_CLEAN: "1"
           DIP_COOLDOWN_HOURS: "6"
+          # ваш капитал: размер каждой идеи считается в рублях и лотах
+          MY_CAPITAL: "100000"
+          OWNER_CAPITAL: "7000000"
+          MY_MAX_POSITION_PCT: "10"
+          MY_RESERVE_PCT: "20"
+          HOLD_DAYS: "2"
+          # 1 = присылать только выпуски с рейтингом A+ (покупка без теста неквала)
+          ONLY_RATING_A_PLUS: "0"
           TZ_NAME: Europe/Moscow
         run: |
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then

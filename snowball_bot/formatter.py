@@ -76,7 +76,7 @@ def analytics_lines(profile: dict | None, price_pct: float | None = None,
             txt += f" ({_num(cp_pct, 1)}% годовых)"
         txt += f" через {cp_days} дн. ({profile.get('next_coupon_date')})"
         if cp_days <= 3:
-            txt += " — ⚠️ цена уже включает НКД, покупать «под купон» смысла нет"
+            txt += " — НКД вернётся с выплатой, но с купона удержат 13% налога"
         out.append(txt)
 
     # 2) ликвидность
@@ -217,6 +217,22 @@ def warnings_for(tx: dict, info: dict | None) -> list[str]:
     return notes
 
 
+def my_size_line(size, html_mode: bool = True) -> str:
+    """Строка «сколько брать мне» — уже посчитанная по капиталу."""
+    if size is None:
+        return ""
+    esc = html.escape if html_mode else (lambda s: s)
+    txt = (f"🧮 <b>Вам:</b> {size.lots} шт ≈ {_fmt_money(size.cost)} "
+           f"({_num(size.pct_of_capital, 1)}% капитала)")
+    if size.nkd_total:
+        txt += f", из них НКД {_fmt_money(size.nkd_total)}"
+    if size.fits_ideas:
+        txt += f"\n   таких идей влезает в капитал: {size.fits_ideas}"
+    if size.note:
+        txt += f"\n   <i>{esc(size.note)}</i>"
+    return txt
+
+
 def format_tx(
     tx: dict,
     tz: str,
@@ -229,6 +245,7 @@ def format_tx(
     show_verdict: bool = True,
     profile: dict | None = None,
     market: dict | None = None,
+    my_size=None,
 ) -> str:
     """Одна сделка → человекочитаемый блок (HTML для Telegram)."""
     esc = html.escape if for_telegram_html else (lambda s: s)
@@ -291,6 +308,9 @@ def format_tx(
                 extra += f", к концу дня {market['eod_after_pct']:+.1f}%"
             lines.append(extra)
 
+    if my_size is not None:
+        lines.append(my_size_line(my_size))
+
     if profile:
         for ln in analytics_lines(profile, price_pct=(price / nominal * 100) if (price and nominal) else None):
             lines.append(ln)
@@ -317,12 +337,14 @@ def format_batch(
     rating_map: dict[str, str] | None = None,
     profiles: dict[str, dict] | None = None,
     market_map: dict[str, dict] | None = None,
+    sizes: dict | None = None,
 ) -> str:
     infos = infos or {}
     moex_map = moex_map or {}
     rating_map = rating_map or {}
     profiles = profiles or {}
     market_map = market_map or {}
+    sizes = sizes or {}
     buys = [t for t in txs if classify(t) == BUY]
     sells = [t for t in txs if classify(t) == SELL]
     buy_sum = sum((t.get("totalPrice") or 0) for t in buys)
@@ -337,7 +359,11 @@ def format_batch(
     if summary:
         header += "\n" + " · ".join(summary)
 
-    blocks = [header, ""]
+    if copy_scale:
+        blocks = [header, f"<i>Ваш капитал: {_fmt_money(copy_scale)} · "
+                          f"размер под ваши деньги — в строке «🧮 Вам»</i>", ""]
+    else:
+        blocks = [header, ""]
     for tx in txs:
         blocks.append(
             format_tx(
@@ -350,6 +376,7 @@ def format_batch(
                 rating=rating_map.get(tx.get("ticker") or ""),
                 profile=profiles.get(tx.get("ticker") or ""),
                 market=market_map.get(tx.get("ticker") or ""),
+                my_size=sizes.get(tx.get("id")),
             )
         )
         blocks.append("➖➖➖➖➖➖➖➖")

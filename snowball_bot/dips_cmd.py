@@ -15,7 +15,7 @@ import argparse
 import html
 import logging
 
-from . import analytics, dipscanner, formatter, ratings as ratings_api
+from . import analytics, dipscanner, formatter, ratings as ratings_api, sizing
 from .config import Config
 from .notify import build_notifiers
 from .store import open_store
@@ -43,9 +43,17 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
     clean = [d for d in dips if not d["is_bad"]]
     bad = [d for d in dips if d["is_bad"]]
 
+    reserve, invest, max_ideas = sizing.capital_split(
+        cfg.my_capital, cfg.my_max_position_pct, cfg.my_reserve_pct)
     head = (f"🎯 <b>Резкие падения облигаций</b> — {len(dips)} шт. "
             f"(«чистых»: {len(clean)})")
-    parts = [head, f"<i>MOEX, падение от максимума дня / за {minutes} мин</i>", ""]
+    plan = (f"<i>Ваш капитал {_fmt_money(cfg.my_capital)} · на идею до "
+            f"{_fmt_money(cfg.my_capital * cfg.my_max_position_pct / 100)} · "
+            f"держать {cfg.hold_days} дн. или до +2% · одновременно не больше "
+            f"{max_ideas} идей, резерв {_fmt_money(reserve)}</i>")
+    if not cfg.only_rating_a_plus:
+        plan += "\n<i>Без теста неквала берите только выпуски с рейтингом A+ (у остальных — максимум 100 тыс. ₽ по «праву последнего слова»)</i>"
+    parts = [head, f"<i>MOEX, падение от максимума дня / за {minutes} мин</i>", plan, ""]
 
     def line(d: dict, clean_flag: bool) -> str:
         name = html.escape(str(d.get("name") or d["secid"]))
@@ -76,6 +84,18 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
             )
         else:
             txt.append("Причина отсева: " + html.escape("; ".join(d["reasons"][:2])))
+        # сколько брать мне: считаем от доли капитала, лоты в рублях
+        face = d.get("facevalue") or 1000
+        rub_price = (price_pct / 100) * face if price_pct else 0
+        if rub_price and cfg.my_capital:
+            budget = cfg.my_capital * cfg.my_max_position_pct / 100
+            lots = max(1, int(budget // (rub_price + (nkd or 0))))
+            cost = lots * (rub_price + (nkd or 0))
+            txt.append(f"🧮 <b>Вам:</b> {lots} шт ≈ {_fmt_money(cost)} "
+                       f"({_num(cost / cfg.my_capital * 100, 1)}% капитала; бюджет на идею "
+                       f"{_fmt_money(budget)})")
+            txt.append(f"🎯 План: купить лимитной заявкой, продать через {cfg.hold_days} дн. "
+                       f"или при +2% — по разбору его сделок 1–3 дня дают максимум")
         # расширенная аналитика
         for ln in formatter.analytics_lines(profiles.get(d.get("isin") or ""), price_pct=price_pct):
             txt.append(ln)
@@ -154,6 +174,20 @@ def run(cfg: Config, once: bool = True, dry_run: bool = False) -> int:
             store.close()
             return 0
         dips = clean_only
+
+    # режим «только рейтинг A+ и выше» — то, что неквал может покупать без теста
+    if cfg.only_rating_a_plus:
+        try:
+            full = ratings_api.get_rating_map(store)
+        except Exception:  # noqa: BLE001
+            full = {}
+        keep = [d for d in dips if not d["is_bad"] and (d.get("isin") in full)]
+        log.info("ONLY_RATING_A_PLUS: из %d кандидатов осталось %d с рейтингом A+ и выше",
+                 len(dips), len(keep))
+        dips = keep
+        if not dips:
+            store.close()
+            return 0
 
     # рейтинги — только для кандидатов, чтобы сообщение было информативнее
     if cfg.check_qualified:
