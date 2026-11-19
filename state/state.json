@@ -13,6 +13,32 @@
    },
    "updated_at": 1795025290
   },
+  "RU000A107YT9": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2029-03-06",
+    "name": "Агрофирма Рубеж 001Р-02",
+    "nominal": 1000,
+    "price": 356.8,
+    "price_pct_of_nominal": 35.7,
+    "rating": null,
+    "ytm": 118.26891025351222
+   },
+   "updated_at": 1795047593
+  },
+  "RU000A109551": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2027-08-25",
+    "name": "Балтийский лизинг ООО БО-П12",
+    "nominal": 1000,
+    "price": 680,
+    "price_pct_of_nominal": 68.0,
+    "rating": null,
+    "ytm": 76.7472117432203
+   },
+   "updated_at": 1795047597
+  },
   "RU000A109KV0": {
    "payload": {
     "is_qualified_only": null,
@@ -65,6 +91,19 @@
    },
    "updated_at": 1795025313
   },
+  "RU000A10C3N8": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2028-07-02",
+    "name": "МИРРИКО БО-П03",
+    "nominal": 1000,
+    "price": 669,
+    "price_pct_of_nominal": 66.9,
+    "rating": null,
+    "ytm": 110.88363863547319
+   },
+   "updated_at": 1795047590
+  },
   "RU000A10C5B8": {
    "payload": {
     "is_qualified_only": null,
@@ -104,6 +143,19 @@
    },
    "updated_at": 1794941592
   },
+  "RU000A10DD97": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2028-11-06",
+    "name": "Росинтер Холдинг БО-02",
+    "nominal": 1000,
+    "price": 510.8,
+    "price_pct_of_nominal": 51.1,
+    "rating": null,
+    "ytm": 234.75644070667147
+   },
+   "updated_at": 1795047588
+  },
   "RU000A10DEE6": {
    "payload": {
     "is_qualified_only": null,
@@ -142,6 +194,19 @@
     "ytm": 28.252637975775674
    },
    "updated_at": 1795025316
+  },
+  "RU000A10DUQ6": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2028-09-12",
+    "name": "Балтийский лизинг ООО БО-П22",
+    "nominal": 1000,
+    "price": 626.5,
+    "price_pct_of_nominal": 62.6,
+    "rating": null,
+    "ytm": 55.569588983856
+   },
+   "updated_at": 1795047595
   },
   "RU000A10EHB3": {
    "payload": {
@@ -723,6 +788,12 @@
   "01a1eeb9-38b3-7efe-a9f6-b936ea339587": 1795025276,
   "01a1eeb9-72f5-71e0-ba2c-0b914276c957": 1795025276,
   "01a1eeb9-d319-73b3-abc5-ebb64712bf24": 1795025276,
-  "01a1eeb9-faeb-7b12-9247-37947f560bef": 1795025276
+  "01a1eeb9-faeb-7b12-9247-37947f560bef": 1795025276,
+  "01a1f042-7e38-7719-ae20-d9ed601e2fa4": 1795047586,
+  "01a1f059-d790-726d-b13e-f7c75c3f065a": 1795047586,
+  "01a1f05a-1028-7b64-bc3a-687e2e351f96": 1795047586,
+  "01a1f05a-4468-7f35-a392-694cabd58b9e": 1795047586,
+  "01a1f05a-92af-7f9c-9ed0-71644bddb4f8": 1795047586,
+  "01a1f065-42be-7345-98ea-9bf9fdb97893": 1795047586
  }
 }
