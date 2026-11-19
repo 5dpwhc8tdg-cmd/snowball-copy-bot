@@ -149,7 +149,7 @@ def run(cfg: Config, once: bool = True, dry_run: bool = False) -> int:
     if dry_run:
         print(plain)
         store.close()
-        return len(dips)
+        return 0
 
     for d in dips:
         alerts[d.get("isin") or d["secid"]] = now
@@ -163,8 +163,11 @@ def run(cfg: Config, once: bool = True, dry_run: bool = False) -> int:
             log.error("Отправка (%s) не удалась: %s", n.name, e)
     if not sent:
         log.error("Не удалось отправить сигнал")
+        store.close()
+        return 1
+    log.info("Сигнал отправлен: %d бумаг", len(dips))
     store.close()
-    return len(dips)
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
