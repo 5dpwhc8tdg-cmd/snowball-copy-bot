@@ -5,7 +5,8 @@
 
   🟢 БРАТЬ        — паника на нормальной бумаге, есть чем торговать и куда расти
   🟡 ОСТОРОЖНО    — половина «за», половина «против»: только мелким лотом
-  🟠 ПОЗДНО       — провал был давно и уже откуплен: ждать нового захода
+  🟠 ПОЗДНО       — провал был давно: отскока осталось мало, но сделка не отменяется —
+                    уменьшаем размер и ставим лимит ниже рынка (см. rebound.py)
   ⛔ НЕ БРАТЬ     — дефолт/мусор/нет ликвидности/бумага в свободном падении
 
 Баллы (плюс — за покупку, минус — против):
@@ -17,7 +18,8 @@
   +1  ликвидность: оборот ≥ 1 млн ₽/день и спред ≤ 3%
   −1  тонкая: оборот < 300 тыс. ₽/день или спред > 5%
   +1  падение свежее (≤ 30 мин назад) — успеваете войти
-  −2  падение было > 60 мин назад (отскок обычно в первые 30 минут)
+      (за давность больше НЕ штрафуем: измерено, что через час остаётся
+       ~+1,4% медианно и 76% случаев в плюсе — см. rebound.py)
   +1  цена в нижней половине дневного диапазона
   −3  бумага в глубоком даунтренде: −25% и больше от годового максимума
   −2  цена ниже 70% от номинала (рынок уже оценил как проблемную)
@@ -26,6 +28,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+
+from . import rebound
 
 BUY, MAYBE, LATE, NO = "buy", "maybe", "late", "no"
 
@@ -39,6 +43,8 @@ class Verdict:
     score: int
     reasons: list[str] = field(default_factory=list)   # коротко, по делу
     blocks: list[str] = field(default_factory=list)    # почему нельзя брать
+    estimate: dict = field(default_factory=dict)       # ожидаемый остаток отскока
+    size_pct: int = 100                                # какую долю обычного размера брать
 
     @property
     def icon(self) -> str:
@@ -132,14 +138,19 @@ def decide(d: dict, profile: dict | None = None, breadth: dict | None = None,
         score -= 1
         reasons.append("тонкая: широкий спред / малый оборот")
 
-    # --- свежесть провала ------------------------------------------------
+    # --- свежесть провала (мягкая поправка, без «отрицания») ---------------
+    est = rebound.estimate(since_low, drop)
     if since_low is not None:
         if since_low <= 30:
             score += 1
             reasons.append(f"провал свежий: {since_low} мин")
-        elif since_low > 60:
-            score -= 2
-            reasons.append(f"поздно: провал {since_low} мин назад")
+        elif not est["useful"]:
+            score -= 1
+            reasons.append(f"отскока осталось мало: ~+{est['expect_pct']:.1f}%, "
+                           f"{since_low} мин после провала")
+        else:
+            reasons.append(f"поздновато ({since_low} мин), но остаток "
+                           f"+{est['expect_pct']:.1f}% ещё есть")
 
     # --- где цена в дневном диапазоне ------------------------------------
     if day_low and day_high and day_high > day_low:
@@ -155,14 +166,15 @@ def decide(d: dict, profile: dict | None = None, breadth: dict | None = None,
         reasons.append(f"глубокий даунтренд: {dd:.0f}% от максимума")
 
     # --- решение ---------------------------------------------------------
+    size = int(rebound.size_factor(since_low, drop) * 100)
     if blocks:
-        return Verdict(NO, score, reasons, blocks)
+        return Verdict(NO, score, reasons, blocks, est, 0)
     if score >= 4:
         kind = BUY
     elif score >= 1:
         kind = MAYBE
-    elif since_low is not None and since_low > 60:
+    elif not est["useful"]:
         kind = LATE
     else:
         kind = NO
-    return Verdict(kind, score, reasons, blocks)
+    return Verdict(kind, score, reasons, blocks, est, size)

@@ -17,7 +17,7 @@ from datetime import datetime
 import html
 import logging
 
-from . import analytics, dipscanner, formatter, ratings as ratings_api, sizing, verdict as verdict_mod
+from . import analytics, dipscanner, formatter, ratings as ratings_api, rebound as rebound_lib, sizing, verdict as verdict_mod
 from .config import Config
 from .notify import build_notifiers
 from .store import open_store
@@ -192,7 +192,12 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
         lots = max(1, int(budget // (rub_now + nkd))) if (budget and rub_now) else 0
         money = f"лот {_fmt_money(rub_now)}{nkd_txt}"
         if lots:
-            money += f" · вам {lots} шт ≈ {_fmt_money(lots * (rub_now + nkd))}"
+            lots_adj = max(1, int(lots * v.size_pct / 100)) if v.size_pct else 0
+            if v.size_pct and v.size_pct < 100:
+                money += (f" · вам {lots_adj} шт ≈ {_fmt_money(lots_adj * (rub_now + nkd))} "
+                          f"({v.size_pct}% от обычного размера)")
+            else:
+                money += f" · вам {lots} шт ≈ {_fmt_money(lots * (rub_now + nkd))}"
 
         # 4-я: ликвидность и рейтинг
         avg_val = prof.get("avg_value_5d")
@@ -221,7 +226,9 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
         link = (f'<a href="https://www.moex.com/ru/issue.aspx?code={d["secid"]}">MOEX</a> · '
                 f'<a href="https://snowball-income.com/public/asset/{d["secid"]}.MCX.RUB">карточка</a>')
 
-        out = [head, evt, money, liq, ctx, f"<i>{html.escape(why)}</i> · {link}"]
+        expect = rebound_lib.explain(tm.get("minutes_since_low"), d["drop"])
+        out = [head, evt, money, f"🎯 <b>Ожидание:</b> {expect}",
+               liq, ctx, f"<i>{html.escape(why)}</i> · {link}"]
         return "\n".join(x for x in out if x)
 
     if clean:
