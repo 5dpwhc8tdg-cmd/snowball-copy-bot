@@ -218,7 +218,7 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
         out.append(f"💵 Лот: {lot_txt}")
         budget = cfg.my_capital * cfg.my_max_position_pct / 100 if cfg.my_capital else 0
         lots = max(1, int(budget // (rub_now + nkd))) if (budget and rub_now) else 0
-        if lots and v.size_pct and not v.blocks:
+        if lots and v.size_pct:
             lots_adj = max(1, int(lots * v.size_pct / 100))
             size_txt = (f"🧮 <b>Вам: {lots_adj} шт ≈ {_fmt_money(lots_adj * (rub_now + nkd))}</b>"
                         f" ({_num(lots_adj * (rub_now + nkd) / cfg.my_capital * 100, 1)}% капитала)")
@@ -227,8 +227,8 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
             out.append(size_txt)
         out.append("")
 
-        # ── ожидание (только если бумагу реально можно брать) ─────────────
-        if clean_flag and v.kind != verdict_mod.NO:
+        # ── ожидание ──────────────────────────────────────────────────────
+        if clean_flag:
             out.append("🎯 <b>Ожидание:</b> " + rebound_lib.explain(tm.get("minutes_since_low"), d["drop"]))
             out.append("")
 

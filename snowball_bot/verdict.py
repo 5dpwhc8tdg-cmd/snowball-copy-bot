@@ -7,7 +7,8 @@
   🟡 ОСТОРОЖНО    — половина «за», половина «против»: только мелким лотом
   🟠 ПОЗДНО       — провал был давно: отскока осталось мало, но сделка не отменяется —
                     уменьшаем размер и ставим лимит ниже рынка (см. rebound.py)
-  ⛔ НЕ БРАТЬ     — дефолт/мусор/нет ликвидности/бумага в свободном падении
+  ⛔ НЕ БРАТЬ     — только реальные стопы: дефолт, нет данных, мусорная цена.
+                    Баллы НЕ запрещают сделку — они задают размер позиции.
 
 Баллы (плюс — за покупку, минус — против):
   +2  её собственные падения раньше отскакивали (медиана ≥ +1%, ≥60% случаев в плюс)
@@ -34,7 +35,7 @@ from . import rebound
 BUY, MAYBE, LATE, NO = "buy", "maybe", "late", "no"
 
 ICON = {BUY: "🟢", MAYBE: "🟡", LATE: "🟠", NO: "⛔"}
-LABEL = {BUY: "БРАТЬ", MAYBE: "ОСТОРОЖНО", LATE: "ПОЗДНО", NO: "НЕ БРАТЬ"}
+LABEL = {BUY: "БРАТЬ", MAYBE: "ОСТОРОЖНО", LATE: "ПОЗДНО", NO: "СЛАБЫЙ СИГНАЛ"}
 
 
 @dataclass
@@ -94,9 +95,9 @@ def decide(d: dict, profile: dict | None = None, breadth: dict | None = None,
     faceunit = (d.get("faceunit") or "SUR").upper()
     if faceunit not in ("SUR", "RUB"):
         blocks.append(f"валютный выпуск (номинал в {faceunit}) — валютный риск и налоги")
-    if price_pct > 110:
-        blocks.append(f"цена {price_pct:.0f}% от номинала — падение на большой премии, "
-                      f"риск сдувания к номиналу")
+    if price_pct > 150:
+        blocks.append(f"цена {price_pct:.0f}% от номинала — это не облигация, а "
+                      f"структурный продукт: сдувание к номиналу при погашении")
     if price_pct and price_pct < 70:
         blocks.append(f"цена {price_pct:.0f}% от номинала — рынок уже считает выпуск проблемным")
     if not profile:
@@ -159,6 +160,11 @@ def decide(d: dict, profile: dict | None = None, breadth: dict | None = None,
             score += 1
             reasons.append("цена у минимума дня")
 
+    # --- премия к номиналу: риск сдувания при погашении --------------------
+    if 110 < price_pct <= 150:
+        score -= 1
+        reasons.append(f"цена {price_pct:.0f}% от номинала — к погашению сдуется")
+
     # --- тренд -----------------------------------------------------------
     dd = profile.get("drawdown_from_max_pct")
     if dd is not None and dd <= -25:
@@ -167,6 +173,11 @@ def decide(d: dict, profile: dict | None = None, breadth: dict | None = None,
 
     # --- решение ---------------------------------------------------------
     size = int(rebound.size_factor(since_low, drop) * 100)
+    # баллы дополнительно уменьшают размер: сделка не отменяется, а становится меньше
+    if score <= -3:
+        size = min(size, 50)
+    elif score <= 0:
+        size = min(size, 75)
     if blocks:
         return Verdict(NO, score, reasons, blocks, est, 0)
     if score >= 4:
