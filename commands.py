@@ -49,6 +49,7 @@ HELP = (
     "/cap 120000 — изменить ваш капитал, ₽\n"
     "/plan — раскладка капитала (резерв, бюджет идеи, число идей)\n"
     "/summary — сводка дня: что было бы, если купить по сегодняшним сигналам\n"
+    "/report — отчёт за неделю: проверка правил на накопленных данных\n"
     "/mute — пауза уведомлений на 2 часа\n"
     "/unmute — снять паузу\n"
     "/help — эта справка"
@@ -283,6 +284,8 @@ class CommandBot:
             self.store.set_meta("mute_until", 0)
             self.store.flush()
             self.reply(chat_id, "🔔 Уведомления включены.")
+        elif cmd in ("report", "week"):
+            threading.Thread(target=self.cmd_report, args=(chat_id,), daemon=True).start()
         elif cmd in ("summary", "day"):
             threading.Thread(target=self.cmd_summary, args=(chat_id, arg), daemon=True).start()
         elif cmd == "last":
@@ -300,6 +303,16 @@ class CommandBot:
         except Exception as e:  # noqa: BLE001
             log.error("summary: %s", e)
             self.reply(chat_id, f"❌ Не смог собрать сводку: {e}")
+
+    def cmd_report(self, chat_id: str) -> None:
+        try:
+            from snowball_bot import report as report_mod
+
+            self.reply(chat_id, "⏳ Считаю отчёт за неделю по свечам…")
+            report_mod.run_report(self.cfg, days=7)
+        except Exception as e:  # noqa: BLE001
+            log.error("report: %s", e)
+            self.reply(chat_id, f"❌ Не смог собрать отчёт: {e}")
 
     def cmd_last(self, chat_id: str) -> None:
         try:

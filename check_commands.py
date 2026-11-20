@@ -29,7 +29,9 @@ def main() -> int:
     in_help = help_commands()
     handled = handled_commands()
     missing = [c for c in in_help if c not in handled and c not in ("help", "start")]
-    unlisted = sorted(handled - set(in_help) - {"start", "check", "update", "dip", "capital", "day"})
+    # алиасы (week/day/check/…) — это не отдельные команды, а синонимы
+    aliases = {"start", "check", "update", "dip", "capital", "day", "week"}
+    unlisted = sorted(handled - set(in_help) - aliases)
     print(f"команд в справке: {len(in_help)} → {', '.join('/' + c for c in in_help)}")
     if missing:
         print("❌ описаны в справке, но НЕ обрабатываются:", ", ".join("/" + c for c in missing))

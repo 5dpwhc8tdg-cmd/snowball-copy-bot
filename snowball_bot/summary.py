@@ -33,15 +33,24 @@ JOURNAL_KEY = "dip_journal"
 # ---------------------------------------------------------------------------
 # Журнал сигналов
 # ---------------------------------------------------------------------------
-def journal_add(store, dips: list[dict], cfg: Config, profiles: dict | None = None) -> None:
-    """Записать отправленные сигналы в журнал (для вечернего разбора)."""
+def journal_add(store, dips: list[dict], cfg: Config, profiles: dict | None = None,
+                sent: bool = True) -> None:
+    """Записать падения в журнал для вечернего и недельного разбора.
+
+    sent=True  — сигнал реально ушёл в чат (его и показываем как «сигнал»);
+    sent=False — падение найдено, но не отправлено (кулдаун, фильтры, «слабый
+                 сигнал»). Такие записи нужны как контрольная группа: без них
+                 статистика считается только по «выжившим», и фильтры нельзя
+                 проверить честно.
+    """
     journal = store.get_meta(JOURNAL_KEY, {}) or {}
     day = dipscanner.now_msk().strftime("%Y-%m-%d")
     entries = journal.get(day) or []
-    known = {e.get("isin") for e in entries}
+    known = {(e.get("isin"), e.get("sent")) for e in entries}
+    now_hhmm = dipscanner.now_msk().strftime("%H:%M")
     for d in dips:
         isin = d.get("isin") or d["secid"]
-        if isin in known:
+        if (isin, sent) in known:
             continue
         tm = d.get("timing") or {}
         prof = (profiles or {}).get(d.get("isin") or "") or {}
@@ -49,17 +58,22 @@ def journal_add(store, dips: list[dict], cfg: Config, profiles: dict | None = No
             "isin": d.get("isin"),
             "secid": d["secid"],
             "name": d.get("name"),
-            "time": tm.get("low_time") or dipscanner.now_msk().strftime("%H:%M"),
+            "time": tm.get("low_time") or now_hhmm,
+            "found_at": now_hhmm,
             "price_pct": d.get("price_pct"),
             "facevalue": d.get("facevalue") or 1000,
             "nkd": d.get("nkd") or 0,
             "drop": round(d.get("drop") or 0, 2),
+            "day_drop": round(d.get("day_drop") or 0, 2),
+            "valtoday": d.get("valtoday"),
+            "numtrades": d.get("numtrades"),
             "dip_stats": prof.get("dip_stats"),
-            "kind": (d.get("verdict") or {}).get("kind") if isinstance(d.get("verdict"), dict) else d.get("verdict_kind"),
+            "kind": d.get("verdict_kind"),
+            "sent": sent,
+            "is_bad": bool(d.get("is_bad")),
         })
-    journal[day] = entries[-60:]
-    # храним 30 дней
-    cutoff = (dipscanner.now_msk() - timedelta(days=30)).strftime("%Y-%m-%d")
+    journal[day] = entries[-400:]
+    cutoff = (dipscanner.now_msk() - timedelta(days=45)).strftime("%Y-%m-%d")
     journal = {k: v for k, v in journal.items() if k >= cutoff}
     store.set_meta(JOURNAL_KEY, journal)
 
@@ -122,6 +136,7 @@ def evaluate(entry: dict, days_prices: dict[str, float] | None = None) -> dict |
     out = {
         "kind": entry.get("kind"),
         "entry_price_pct": entry_price,
+        "day_move_from_entry": (candles[-1]["close"] - candles[0]["close"]) / candles[0]["close"] * 100,
         "r30": ret_at(30),
         "r60": ret_at(60),
         "r120": ret_at(120),

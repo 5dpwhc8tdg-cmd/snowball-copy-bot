@@ -450,6 +450,9 @@ def main(argv: list[str] | None = None) -> int:
     p_sum.add_argument("--dry-run", action="store_true")
     p_sum.add_argument("--days", type=int, default=1, help="за сколько последних дней (по умолчанию 1)")
     p_sum.add_argument("--date", default=None, help="конкретный день, например 2026-11-20")
+    p_rep = sub.add_parser("report", help="недельный отчёт: проверка фильтров на накопленных данных")
+    p_rep.add_argument("--days", type=int, default=7)
+    p_rep.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
 
     load_dotenv(args.env)
@@ -472,6 +475,12 @@ def main(argv: list[str] | None = None) -> int:
         from . import dips_cmd
 
         return dips_cmd.run(cfg, dry_run=getattr(args, "dry_run", False))
+
+    if getattr(args, "cmd", None) == "report":
+        from . import report
+
+        return report.run_report(cfg, days=getattr(args, "days", 7),
+                                 dry_run=getattr(args, "dry_run", False))
 
     if getattr(args, "cmd", None) == "summary":
         from . import summary

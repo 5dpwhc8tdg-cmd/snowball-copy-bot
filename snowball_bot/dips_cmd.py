@@ -305,7 +305,7 @@ def remember_cooldown(store, dips: list[dict], hours: int | None = None) -> None
     try:
         from . import summary
 
-        summary.journal_add(store, dips, cfg, profiles)
+        summary.journal_add(store, dips, cfg, profiles, sent=True)
     except Exception as e:  # noqa: BLE001
         log.warning("Не смог записать журнал сигналов: %s", e)
     try:
@@ -399,6 +399,18 @@ def run(cfg: Config, once: bool = True, dry_run: bool = False) -> int:
             log.warning("Аналитика по %s недоступна: %s", isin, e)
 
     breadth = store.get_meta("market_breadth", {}) or {}
+
+    # ── журнал найденного (контрольная группа) ───────────────────────────
+    # Пишем ВСЁ, что нашёл сканер, ещё до фильтров «что отправить»: иначе
+    # статистика считается только по отправленным сигналам и фильтры
+    # невозможно проверить честно.
+    try:
+        from . import summary as summary_mod
+
+        summary_mod.journal_add(store, dips, cfg, profiles, sent=False)
+    except Exception as e:  # noqa: BLE001
+        log.warning("Журнал найденного не записан: %s", e)
+
     # вердикт по каждой бумаге — кладём в кандидата, чтобы он попал и в журнал
     for d in dips:
         try:
@@ -422,7 +434,7 @@ def run(cfg: Config, once: bool = True, dry_run: bool = False) -> int:
     try:
         from . import summary
 
-        summary.journal_add(store, dips, cfg, profiles)
+        summary.journal_add(store, dips, cfg, profiles, sent=True)
     except Exception as e:  # noqa: BLE001
         log.warning("Не смог записать журнал сигналов: %s", e)
 
