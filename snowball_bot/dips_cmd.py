@@ -32,6 +32,18 @@ def _num(value, digits: int = 1) -> str:
         return str(value)
 
 
+def _points(n: int) -> str:
+    """Баллы по-русски: 1 балл, 2 балла, 5 баллов."""
+    n = abs(int(n))
+    if n % 10 == 1 and n % 100 != 11:
+        word = "балл"
+    elif 2 <= n % 10 <= 4 and not 12 <= n % 100 <= 14:
+        word = "балла"
+    else:
+        word = "баллов"
+    return f"{n} {word}"
+
+
 def _fmt_money(v: float | None) -> str:
     if not v:
         return "—"
@@ -164,72 +176,97 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
     parts.append("")
 
     def line(d: dict, clean_flag: bool) -> str:
-        """Компактная карточка: 6 строк + вердикт. Все детали — по ссылкам."""
+        """Карточка с «воздухом»: каждая мысль — отдельная строка со смайликом."""
         name = html.escape(str(d.get("name") or d["secid"]))
         price_pct = d.get("price_pct") or 0
         rating = rating_map.get(d.get("isin") or "")
         prof = profiles.get(d.get("isin") or "") or {}
         v = verdict_mod.decide(d, prof, breadth, cfg)
         tm = d.get("timing") or {}
+        out: list[str] = []
 
-        # 1-я строка: вердикт + имя
-        head = f"{v.icon} <b>{v.label}</b> · <b>{name}</b> <code>{html.escape(d['secid'])}</code>"
+        # ── заголовок: вердикт и имя ──────────────────────────────────────
+        out.append(f"{v.icon} <b>{v.label}</b> — <b>{name}</b>")
+        sign = "−" if v.score < 0 else "+"
+        out.append(f"<code>{html.escape(d['secid'])}</code> · {sign}{_points(v.score)}")
+        out.append("")
 
-        # 2-я: что произошло, со временем
+        # ── что случилось ─────────────────────────────────────────────────
         when = ""
         if tm.get("peak_time") and tm.get("low_time"):
-            when = f" · {tm['peak_time']}→{tm['low_time']}"
+            when = f"<code>{tm['peak_time']} → {tm['low_time']}</code>"
             if tm.get("minutes_since_low") is not None:
-                when += f" ({tm['minutes_since_low']} мин назад)"
-        evt = f"−{d['drop']:.1f}%{when} → {price_pct:.1f}% от номинала"
+                when += f" · {tm['minutes_since_low']} мин назад"
+        out.append(f"📉 <b>Падение −{_num(d['drop'], 1)}%</b> · "
+                   f"цена {_num(price_pct, 1)}% от номинала")
+        if when:
+            out.append(f"⏱ {when}")
+        out.append("")
 
-        # 3-я: деньги — лот, НКД, сколько брать вам
+        # ── почему нельзя брать ───────────────────────────────────────────
+        if v.blocks:
+            out.append(f"🚫 <b>Причина:</b> {html.escape('; '.join(v.blocks))}")
+            out.append("")
+
+        # ── деньги ────────────────────────────────────────────────────────
         face = d.get("facevalue") or 1000
         rub_now = (price_pct / 100) * face
         nkd = d.get("nkd") or 0
-        nkd_txt = f" + НКД {_num(nkd, 2)} ₽" if nkd else ""
+        lot_txt = _fmt_money(rub_now)
+        if nkd:
+            lot_txt += f" + НКД {_num(nkd, 2)} ₽"
+        out.append(f"💵 Лот: {lot_txt}")
         budget = cfg.my_capital * cfg.my_max_position_pct / 100 if cfg.my_capital else 0
         lots = max(1, int(budget // (rub_now + nkd))) if (budget and rub_now) else 0
-        money = f"лот {_fmt_money(rub_now)}{nkd_txt}"
-        if lots:
-            lots_adj = max(1, int(lots * v.size_pct / 100)) if v.size_pct else 0
-            if v.size_pct and v.size_pct < 100:
-                money += (f" · вам {lots_adj} шт ≈ {_fmt_money(lots_adj * (rub_now + nkd))} "
-                          f"({v.size_pct}% от обычного размера)")
-            else:
-                money += f" · вам {lots} шт ≈ {_fmt_money(lots * (rub_now + nkd))}"
+        if lots and v.size_pct and not v.blocks:
+            lots_adj = max(1, int(lots * v.size_pct / 100))
+            size_txt = (f"🧮 <b>Вам: {lots_adj} шт ≈ {_fmt_money(lots_adj * (rub_now + nkd))}</b>"
+                        f" ({_num(lots_adj * (rub_now + nkd) / cfg.my_capital * 100, 1)}% капитала)")
+            if v.size_pct < 100:
+                size_txt += f"\n   <i>это {v.size_pct}% обычного размера — вход поздний</i>"
+            out.append(size_txt)
+        out.append("")
 
-        # 4-я: ликвидность и рейтинг
+        # ── ожидание (только если бумагу реально можно брать) ─────────────
+        if clean_flag and v.kind != verdict_mod.NO:
+            out.append("🎯 <b>Ожидание:</b> " + rebound_lib.explain(tm.get("minutes_since_low"), d["drop"]))
+            out.append("")
+
+        # ── качество бумаги ───────────────────────────────────────────────
         avg_val = prof.get("avg_value_5d")
-        liq = f"оборот 5 дн. {_fmt_money(avg_val)}/день" if avg_val else f"оборот дня {_fmt_money(d.get('valtoday'))}"
+        liq = []
+        if avg_val:
+            liq.append(f"оборот {_fmt_money(avg_val)}/день")
+        elif d.get("valtoday"):
+            liq.append(f"оборот дня {_fmt_money(d['valtoday'])}")
         if d.get("bid") and d.get("offer") and d["bid"] > 0:
-            liq += f" · спред {(d['offer'] - d['bid']) / d['bid'] * 100:.1f}%"
-        liq += f" · рейтинг {rating}" if rating else " · рейтинга A+ нет"
+            liq.append(f"спред {(d['offer'] - d['bid']) / d['bid'] * 100:.1f}%")
+        liq.append(f"рейтинг {rating}" if rating else "рейтинга A+ нет")
+        out.append("📊 " + " · ".join(liq))
 
-        # 5-я: рынок и статистика бумаги одной строкой
-        bits = []
-        if breadth and breadth.get("down_share") is not None:
-            bits.append(f"на рынке в минусе {breadth['down_share']:.0f}%")
+        stats = []
         if prof.get("prev_drops") is not None:
             med = prof.get("prev_drops_rebound_median_pct")
-            up = prof.get("prev_drops_up_share_pct")
             if med is None:
-                bits.append("падений такой глубины раньше не было")
+                stats.append("таких падений у неё раньше не было")
             else:
-                bits.append(f"её падения: n={prof['prev_drops']}, медиана 2 дн. {med:+.1f}%, в плюсе {up:.0f}%")
+                stats.append(f"её падения: {prof['prev_drops']} шт, медиана 2 дн. "
+                             f"{med:+.1f}%, в плюсе {prof['prev_drops_up_share_pct']:.0f}%")
         if prof.get("drawdown_from_max_pct") is not None:
-            bits.append(f"просадка от годового максимума {prof['drawdown_from_max_pct']:.0f}%")
-        ctx = " · ".join(bits)
+            stats.append(f"{prof['drawdown_from_max_pct']:.0f}% от годового максимума")
+        if breadth and breadth.get("down_share") is not None:
+            stats.append(f"на рынке в минусе {breadth['down_share']:.0f}%")
+        if stats:
+            out.append("🔁 " + " · ".join(stats))
+        out.append("")
 
-        # 6-я: почему такой вердикт
-        why = v.short(2)
-        link = (f'<a href="https://www.moex.com/ru/issue.aspx?code={d["secid"]}">MOEX</a> · '
-                f'<a href="https://snowball-income.com/public/asset/{d["secid"]}.MCX.RUB">карточка</a>')
-
-        expect = rebound_lib.explain(tm.get("minutes_since_low"), d["drop"])
-        out = [head, evt, money, f"🎯 <b>Ожидание:</b> {expect}",
-               liq, ctx, f"<i>{html.escape(why)}</i> · {link}"]
-        return "\n".join(x for x in out if x)
+        # ── почему такой вердикт + ссылки ─────────────────────────────────
+        why = v.short(2) if not v.blocks else ""
+        if why:
+            out.append(f"<i>{html.escape(why)}</i>")
+        out.append(f'🔗 <a href="https://www.moex.com/ru/issue.aspx?code={d["secid"]}">MOEX</a>'
+                   f' · <a href="https://snowball-income.com/public/asset/{d["secid"]}.MCX.RUB">карточка</a>')
+        return "\n".join(out)
 
     if clean:
         parts.append("✅ <b>Похоже на панику, а не на дефолт</b>")
@@ -239,7 +276,7 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
             parts.append("")
         for d in clean[:6]:
             parts.append(line(d, True))
-            parts.append("")
+            parts.append("➖➖➖➖➖➖")
     if bad:
         parts.append("")
         parts.append("⛔ <b>Отсеяно (не покупать в падении)</b>")

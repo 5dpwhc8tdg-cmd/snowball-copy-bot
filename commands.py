@@ -345,8 +345,8 @@ class CommandBot:
         log.info("Слушаю команды в Telegram (Ctrl+C — выход)")
         started = time.time()
         while True:
-            if time.time() - started > 5.4 * 3600:  # под лимит job в Actions (6 ч)
-                log.info("Отработал 5.4 ч — выхожу, следующий запуск по расписанию")
+            if time.time() - started > 5.85 * 3600:  # под лимит job в Actions (6 ч)
+                log.info("Отработал 5.85 ч (лимит job'а 6 ч) — выхожу, перезапуск по расписанию")
                 return
             try:
                 data = self.api.call(
