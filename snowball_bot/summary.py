@@ -78,6 +78,21 @@ def journal_add(store, dips: list[dict], cfg: Config, profiles: dict | None = No
     store.set_meta(JOURNAL_KEY, journal)
 
 
+def mark_sent(store, dips: list[dict]) -> None:
+    """Пометить записи журнала как отправленные (без создания дублей)."""
+    journal = store.get_meta(JOURNAL_KEY, {}) or {}
+    today = dipscanner.now_msk().strftime("%Y-%m-%d")
+    isins = {(d.get("isin") or d["secid"]) for d in dips}
+    changed = False
+    for e in journal.get(today) or []:
+        key = e.get("isin") or e.get("secid")
+        if key in isins and not e.get("sent"):
+            e["sent"] = True
+            changed = True
+    if changed:
+        store.set_meta(JOURNAL_KEY, journal)
+
+
 def journal_get(store, day: str) -> list[dict]:
     return (store.get_meta(JOURNAL_KEY, {}) or {}).get(day) or []
 

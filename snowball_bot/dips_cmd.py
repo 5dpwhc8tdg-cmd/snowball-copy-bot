@@ -301,13 +301,14 @@ def remember_cooldown(store, dips: list[dict], hours: int | None = None) -> None
         alerts[d.get("isin") or d["secid"]] = now
     store.set_meta("dip_alerts", alerts)
 
-    # журнал дня — из него вечером считается сводка
+    # помечаем записи журнала отправленными (сами записи уже созданы
+    # до фильтров — там контрольная группа)
     try:
         from . import summary
 
-        summary.journal_add(store, dips, cfg, profiles, sent=True)
+        summary.mark_sent(store, dips)
     except Exception as e:  # noqa: BLE001
-        log.warning("Не смог записать журнал сигналов: %s", e)
+        log.warning("Не смог обновить журнал сигналов: %s", e)
     try:
         store.flush()
     except Exception:  # noqa: BLE001
@@ -335,6 +336,16 @@ def run(cfg: Config, once: bool = True, dry_run: bool = False) -> int:
         log.info("Падений не найдено")
         store.close()
         return 0
+
+    # ── журнал найденного: ВСЁ, что нашёл сканер, до фильтров отправки ────
+    # Без этого контрольная группа теряется (кулдаун, «только чистые»), и
+    # проверить фильтры честно нельзя.
+    try:
+        from . import summary as summary_mod
+
+        summary_mod.journal_add(store, dips, cfg, {}, sent=False)
+    except Exception as e:  # noqa: BLE001
+        log.warning("Журнал найденного не записан: %s", e)
 
     # антиспам: не повторять сигнал по одной бумаге чаще, чем раз в N часов
     import time as _time
@@ -404,13 +415,6 @@ def run(cfg: Config, once: bool = True, dry_run: bool = False) -> int:
     # Пишем ВСЁ, что нашёл сканер, ещё до фильтров «что отправить»: иначе
     # статистика считается только по отправленным сигналам и фильтры
     # невозможно проверить честно.
-    try:
-        from . import summary as summary_mod
-
-        summary_mod.journal_add(store, dips, cfg, profiles, sent=False)
-    except Exception as e:  # noqa: BLE001
-        log.warning("Журнал найденного не записан: %s", e)
-
     # вердикт по каждой бумаге — кладём в кандидата, чтобы он попал и в журнал
     for d in dips:
         try:
@@ -430,13 +434,14 @@ def run(cfg: Config, once: bool = True, dry_run: bool = False) -> int:
         alerts[d.get("isin") or d["secid"]] = now
     store.set_meta("dip_alerts", alerts)
 
-    # журнал дня — из него вечером считается сводка
+    # помечаем записи журнала отправленными (сами записи уже созданы
+    # до фильтров — там контрольная группа)
     try:
         from . import summary
 
-        summary.journal_add(store, dips, cfg, profiles, sent=True)
+        summary.mark_sent(store, dips)
     except Exception as e:  # noqa: BLE001
-        log.warning("Не смог записать журнал сигналов: %s", e)
+        log.warning("Не смог обновить журнал сигналов: %s", e)
 
     # Telegram режет сообщения на 4096 символах — отправляем частями по блокам
     chunks = formatter.split_for_limit(text, limit=3900)
