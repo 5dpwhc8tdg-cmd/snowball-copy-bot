@@ -98,6 +98,27 @@ class CommandBot:
         self.busy: set[str] = set()
 
     # --- утилиты -------------------------------------------------------
+    def refresh_state(self) -> bool:
+        """Подтянуть свежее состояние из репозитория перед чтением.
+
+        Слушатель живёт до 6 часов, и всё это время он видит состояние,
+        зафиксированное при старте job'а. Из-за этого /summary отвечал
+        «сигналов не было», хотя сканер их уже записал. Перед чтением
+        подтягиваем origin/main (быстро и без риска).
+        """
+        import subprocess
+        import os
+
+        try:
+            if os.environ.get("GITHUB_ACTIONS"):
+                subprocess.run(["git", "fetch", "--quiet", "origin", "HEAD"], timeout=25)
+                subprocess.run(["git", "checkout", "--quiet", "FETCH_HEAD", "--", "state"],
+                               timeout=25, check=False)
+            return True
+        except Exception as e:  # noqa: BLE001
+            log.warning("Не смог обновить состояние из репозитория: %s", e)
+            return False
+
     def reply(self, chat_id: str, text: str) -> None:
         self.api.send(chat_id, text)
 
@@ -123,6 +144,7 @@ class CommandBot:
 
     # --- команды -------------------------------------------------------
     def cmd_status(self, chat_id: str) -> None:
+        self.refresh_state()
         muted = bool((self.store.get_meta("mute_until", 0) or 0) > time.time())
         self.reply(
             chat_id,
@@ -167,7 +189,10 @@ class CommandBot:
             lines.append(f"✅ Рейтинги (smart-lab): {len(rmap)} выпусков в кэше")
         except Exception as e:  # noqa: BLE001
             lines.append(f"⚠️ Рейтинги: {e}")
-        lines.append(f"\n🕒 {datetime.now():%d.%m.%Y %H:%M:%S}")
+        journal = self.store.get_meta("dip_journal", {}) or {}
+        today = dipscanner.now_msk().strftime("%Y-%m-%d")
+        lines.append(f"🗂 Журнал за сегодня: {len(journal.get(today) or [])} записей")
+        lines.append(f"\n🕒 {dipscanner.now_msk():%d.%m.%Y %H:%M:%S} МСК")
         self.reply(chat_id, "\n".join(lines))
 
     def cmd_now(self, chat_id: str) -> None:
@@ -298,8 +323,16 @@ class CommandBot:
             from snowball_bot import summary as summary_mod
 
             date = arg.strip() if arg and arg.strip()[:2] == "20" else None
+            self.refresh_state()
+            day = date or dipscanner.now_msk().strftime("%Y-%m-%d")
             self.reply(chat_id, "⏳ Считаю сводку по свечам…" + (f" ({date})" if date else ""))
             summary_mod.run(self.cfg, days=1, dry_run=False, date=date)
+            # если журнал пуст — говорим, где искать, а не «сигналов не было»
+            journal = (self.store.get_meta("dip_journal", {}) or {})
+            if not journal.get(day):
+                days = sorted((d for d, v in journal.items() if v), reverse=True)[:3]
+                hint = ", ".join(f"/summary {d}" for d in days) or "журнал пока пуст"
+                self.reply(chat_id, f"ℹ️ В журнале нет записей за {day}. Есть за: {hint}")
         except Exception as e:  # noqa: BLE001
             log.error("summary: %s", e)
             self.reply(chat_id, f"❌ Не смог собрать сводку: {e}")
@@ -307,6 +340,8 @@ class CommandBot:
     def cmd_report(self, chat_id: str) -> None:
         try:
             from snowball_bot import report as report_mod
+
+            self.refresh_state()
 
             self.reply(chat_id, "⏳ Считаю отчёт за неделю по свечам…")
             report_mod.run_report(self.cfg, days=7)
