@@ -143,6 +143,19 @@
    },
    "updated_at": 1795025279
   },
+  "RU000A10C873": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2028-07-15",
+    "name": "СКС ЛОМБАРД БО-01",
+    "nominal": 1000,
+    "price": 905,
+    "price_pct_of_nominal": 90.5,
+    "rating": null,
+    "ytm": 90.8034727703236
+   },
+   "updated_at": 1795207673
+  },
   "RU000A10CM14": {
    "payload": {
     "is_qualified_only": null,
@@ -155,6 +168,19 @@
     "ytm": 248.24351646368459
    },
    "updated_at": 1795085560
+  },
+  "RU000A10CST6": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2028-09-06",
+    "name": "СКС ЛОМБАРД БО-02",
+    "nominal": 1000,
+    "price": 867.7,
+    "price_pct_of_nominal": 86.8,
+    "rating": null,
+    "ytm": 77.82027153868762
+   },
+   "updated_at": 1795207670
   },
   "RU000A10D4E4": {
    "payload": {
@@ -73530,6 +73556,24 @@
    },
    "updated_at": 1795069614
   },
+  "moex:RU000A107YT9": {
+   "payload": {
+    "bond_subtype": "До погашения",
+    "bond_type": "Облигация с фиксированным (известным) купоном",
+    "coupon_details": "Фиксированный с известными купонами",
+    "facevalue": "1000",
+    "group": "Облигации",
+    "has_default": false,
+    "has_tech_default": false,
+    "is_qualified_only": false,
+    "isin": "RU000A107YT9",
+    "list_level": 3,
+    "matdate": "2029-03-06",
+    "name": "Агрофирма Рубеж 001Р-02",
+    "shortname": "Рубеж 1P2"
+   },
+   "updated_at": 1795207680
+  },
   "moex:RU000A109551": {
    "payload": {
     "bond_subtype": "До погашения",
@@ -73566,6 +73610,42 @@
    },
    "updated_at": 1795130281
   },
+  "moex:RU000A10BNM4": {
+   "payload": {
+    "bond_subtype": "До погашения",
+    "bond_type": "Амортизируемая облигация",
+    "coupon_details": null,
+    "facevalue": "1000",
+    "group": "Облигации",
+    "has_default": false,
+    "has_tech_default": false,
+    "is_qualified_only": false,
+    "isin": "RU000A10BNM4",
+    "list_level": 2,
+    "matdate": "2028-05-07",
+    "name": "АБЗ-1 002P-03",
+    "shortname": "АБЗ-1 2Р03"
+   },
+   "updated_at": 1795207676
+  },
+  "moex:RU000A10C3N8": {
+   "payload": {
+    "bond_subtype": "До оферты (call)",
+    "bond_type": "Амортизируемая облигация",
+    "coupon_details": null,
+    "facevalue": "1000",
+    "group": "Облигации",
+    "has_default": false,
+    "has_tech_default": false,
+    "is_qualified_only": false,
+    "isin": "RU000A10C3N8",
+    "list_level": 3,
+    "matdate": "2028-07-02",
+    "name": "МИРРИКО БО-П03",
+    "shortname": "МИРРИКО1P3"
+   },
+   "updated_at": 1795207674
+  },
   "moex:RU000A10C741": {
    "payload": {
     "bond_subtype": "До оферты (put)",
@@ -73584,6 +73664,24 @@
    },
    "updated_at": 1795069612
   },
+  "moex:RU000A10C873": {
+   "payload": {
+    "bond_subtype": "До оферты (call)",
+    "bond_type": "Облигация с фиксированным (известным) купоном",
+    "coupon_details": "Фиксированный с известными купонами",
+    "facevalue": "1000",
+    "group": "Облигации",
+    "has_default": false,
+    "has_tech_default": false,
+    "is_qualified_only": true,
+    "isin": "RU000A10C873",
+    "list_level": 3,
+    "matdate": "2028-07-15",
+    "name": "СКС ЛОМБАРД БО-01",
+    "shortname": "СКСЛомбБ01"
+   },
+   "updated_at": 1795207681
+  },
   "moex:RU000A10CM14": {
    "payload": {
     "bond_subtype": "До оферты (put)",
@@ -73601,6 +73699,42 @@
     "shortname": "Росинтер01"
    },
    "updated_at": 1795085562
+  },
+  "moex:RU000A10CST6": {
+   "payload": {
+    "bond_subtype": "До оферты (call)",
+    "bond_type": "Облигация с фиксированным (известным) купоном",
+    "coupon_details": "Фиксированный с известными купонами",
+    "facevalue": "1000",
+    "group": "Облигации",
+    "has_default": false,
+    "has_tech_default": false,
+    "is_qualified_only": true,
+    "isin": "RU000A10CST6",
+    "list_level": 3,
+    "matdate": "2028-09-06",
+    "name": "СКС ЛОМБАРД БО-02",
+    "shortname": "СКСЛомбБ02"
+   },
+   "updated_at": 1795207679
+  },
+  "moex:RU000A10DD97": {
+   "payload": {
+    "bond_subtype": "До оферты (put)",
+    "bond_type": "Облигация с фиксированным (неизвестным) купоном",
+    "coupon_details": "Фиксированный с неизвестными купонами",
+    "facevalue": "1000",
+    "group": "Облигации",
+    "has_default": false,
+    "has_tech_default": false,
+    "is_qualified_only": false,
+    "isin": "RU000A10DD97",
+    "list_level": 3,
+    "matdate": "2028-11-06",
+    "name": "Росинтер Холдинг БО-02",
+    "shortname": "Росинтер02"
+   },
+   "updated_at": 1795207677
   },
   "moex:RU000A10DLC5": {
    "payload": {
@@ -73952,6 +74086,38 @@
     "putoption": null
    },
    "updated_at": 1795191024
+  },
+  "profile:RU000A107YT9": {
+   "payload": {
+    "amort_count": 1,
+    "amort_upcoming": 1,
+    "avg_value_5d": 1325096.08,
+    "bond_subtype": "До погашения",
+    "calloption": null,
+    "coupon_count": 20,
+    "coupon_details": "Фиксированный с известными купонами",
+    "coupon_period_days": null,
+    "days_history": 171,
+    "days_to_redemption": "837",
+    "drawdown_from_max_pct": -55.71106630292966,
+    "faceunit": "SUR",
+    "facevalue": "1000",
+    "has_prospectus": "0",
+    "lotsize": null,
+    "max_52w": 84.31,
+    "min_52w": 34.26,
+    "next_amort_date": "2029-03-06",
+    "next_coupon_date": "2026-12-08",
+    "next_coupon_days": 17,
+    "next_coupon_pct": 18.5,
+    "next_coupon_value": 46.12,
+    "offerdate": null,
+    "prev_drops": 42,
+    "prev_drops_rebound_median_pct": -0.37932629171597176,
+    "prev_drops_up_share_pct": 40.0,
+    "putoption": null
+   },
+   "updated_at": 1795207699
   },
   "profile:RU000A1082M3": {
    "payload": {
@@ -74430,6 +74596,38 @@
    },
    "updated_at": 1795187470
   },
+  "profile:RU000A10BNM4": {
+   "payload": {
+    "amort_count": 6,
+    "amort_upcoming": 6,
+    "avg_value_5d": 37159276.12,
+    "bond_subtype": "До погашения",
+    "calloption": null,
+    "coupon_count": 20,
+    "coupon_details": null,
+    "coupon_period_days": null,
+    "days_history": 171,
+    "days_to_redemption": "534",
+    "drawdown_from_max_pct": -8.28402366863906,
+    "faceunit": "SUR",
+    "facevalue": "1000",
+    "has_prospectus": "1",
+    "lotsize": null,
+    "max_52w": 111.54,
+    "min_52w": 100.03,
+    "next_amort_date": "2027-02-12",
+    "next_coupon_date": "2026-12-14",
+    "next_coupon_days": 23,
+    "next_coupon_pct": 25.5,
+    "next_coupon_value": 20.96,
+    "offerdate": null,
+    "prev_drops": 2,
+    "prev_drops_rebound_median_pct": 1.323132967856886,
+    "prev_drops_up_share_pct": 100.0,
+    "putoption": null
+   },
+   "updated_at": 1795207690
+  },
   "profile:RU000A10BQM7": {
    "payload": {
     "amort_count": 1,
@@ -74458,6 +74656,38 @@
     "putoption": null
    },
    "updated_at": 1795090977
+  },
+  "profile:RU000A10C3N8": {
+   "payload": {
+    "amort_count": 4,
+    "amort_upcoming": 4,
+    "avg_value_5d": 2078170.94,
+    "bond_subtype": "До оферты (call)",
+    "calloption": null,
+    "coupon_count": 20,
+    "coupon_details": null,
+    "coupon_period_days": null,
+    "days_history": 167,
+    "days_to_redemption": "590",
+    "drawdown_from_max_pct": -33.2500749325607,
+    "faceunit": "SUR",
+    "facevalue": "1000",
+    "has_prospectus": "0",
+    "lotsize": null,
+    "max_52w": 100.09,
+    "min_52w": 66.69,
+    "next_amort_date": "2028-04-03",
+    "next_coupon_date": "2026-12-10",
+    "next_coupon_days": 19,
+    "next_coupon_pct": 22.5,
+    "next_coupon_value": 18.49,
+    "offerdate": null,
+    "prev_drops": 22,
+    "prev_drops_rebound_median_pct": -0.5198364014964074,
+    "prev_drops_up_share_pct": 35.0,
+    "putoption": null
+   },
+   "updated_at": 1795207686
   },
   "profile:RU000A10C741": {
    "payload": {
@@ -74516,6 +74746,38 @@
     "putoption": null
    },
    "updated_at": 1795187449
+  },
+  "profile:RU000A10C873": {
+   "payload": {
+    "amort_count": 1,
+    "amort_upcoming": 1,
+    "avg_value_5d": 381628.74,
+    "bond_subtype": "До оферты (call)",
+    "calloption": null,
+    "coupon_count": 20,
+    "coupon_details": "Фиксированный с известными купонами",
+    "coupon_period_days": null,
+    "days_history": 168,
+    "days_to_redemption": "603",
+    "drawdown_from_max_pct": -10.674104188333168,
+    "faceunit": "SUR",
+    "facevalue": "1000",
+    "has_prospectus": "0",
+    "lotsize": null,
+    "max_52w": 105.77,
+    "min_52w": 90.1,
+    "next_amort_date": "2028-07-15",
+    "next_coupon_date": "2026-11-23",
+    "next_coupon_days": 2,
+    "next_coupon_pct": 28.5,
+    "next_coupon_value": 23.42,
+    "offerdate": null,
+    "prev_drops": 3,
+    "prev_drops_rebound_median_pct": -1.7904577894517264,
+    "prev_drops_up_share_pct": 50.0,
+    "putoption": null
+   },
+   "updated_at": 1795207703
   },
   "profile:RU000A10CM14": {
    "payload": {
@@ -74690,6 +74952,38 @@
     "putoption": null
    },
    "updated_at": 1795187475
+  },
+  "profile:RU000A10DD97": {
+   "payload": {
+    "amort_count": 1,
+    "amort_upcoming": 1,
+    "avg_value_5d": 1104649.06,
+    "bond_subtype": "До оферты (put)",
+    "calloption": null,
+    "coupon_count": 12,
+    "coupon_details": "Фиксированный с неизвестными купонами",
+    "coupon_period_days": null,
+    "days_history": 171,
+    "days_to_redemption": "717",
+    "drawdown_from_max_pct": -48.79457050243112,
+    "faceunit": "SUR",
+    "facevalue": "1000",
+    "has_prospectus": "1",
+    "lotsize": null,
+    "max_52w": 98.72,
+    "min_52w": 50.55,
+    "next_amort_date": "2028-11-06",
+    "next_coupon_date": "2027-02-08",
+    "next_coupon_days": 79,
+    "next_coupon_pct": 24.0,
+    "next_coupon_value": 59.84,
+    "offerdate": null,
+    "prev_drops": 36,
+    "prev_drops_rebound_median_pct": -1.0490970788543255,
+    "prev_drops_up_share_pct": 32.35294117647059,
+    "putoption": null
+   },
+   "updated_at": 1795207694
   },
   "profile:RU000A10DJP1": {
    "payload": {
@@ -78644,6 +78938,14 @@
   "01a1f3b4-fda8-73b7-b1a6-d207a0a56eff": 1795098150,
   "01a1f44f-63db-7230-8c2e-c7e00f88abda": 1795130274,
   "01a1f546-e92e-7b92-9954-5563f675b63c": 1795130274,
-  "01a1f54f-eb85-757e-b00c-4ae6fbb53d92": 1795130274
+  "01a1f54f-eb85-757e-b00c-4ae6fbb53d92": 1795130274,
+  "01a1f918-93d3-7c02-b641-c46ac8def3ce": 1795207667,
+  "01a1f918-e509-7c10-b778-e4f3ea710a8d": 1795207667,
+  "01a1f919-32d2-7b83-b2cb-a645bcee4023": 1795207667,
+  "01a1f919-806d-7baa-bd3d-4de2f052349f": 1795207667,
+  "01a1f91a-1112-757d-bee7-4fc8e9585735": 1795207667,
+  "01a1f93d-4930-7e61-8091-1bf67b8dd1b2": 1795207667,
+  "01a1f95a-7102-7495-96a5-69f25909d69e": 1795207667,
+  "01a1f95b-3521-7f93-8e17-3a165c47481f": 1795207667
  }
 }
