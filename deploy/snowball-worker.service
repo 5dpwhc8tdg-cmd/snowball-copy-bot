@@ -1,0 +1,21 @@
+[Unit]
+Description=Snowball Copy Bot — команды в Telegram + проверка портфеля
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=snowball
+WorkingDirectory=/opt/snowball-copy-bot
+Environment=PYTHONUNBUFFERED=1
+Environment=STATE_BACKEND=json
+Environment=STATE_PATH=/opt/snowball-copy-bot/state/state.json
+ExecStart=/usr/bin/python3 worker.py
+Restart=always
+RestartSec=10
+# Логи в journald: journalctl -u snowball-worker -f
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
