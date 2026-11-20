@@ -284,18 +284,19 @@ class CommandBot:
             self.store.flush()
             self.reply(chat_id, "🔔 Уведомления включены.")
         elif cmd in ("summary", "day"):
-            threading.Thread(target=self.cmd_summary, args=(chat_id,), daemon=True).start()
+            threading.Thread(target=self.cmd_summary, args=(chat_id, arg), daemon=True).start()
         elif cmd == "last":
             threading.Thread(target=self.cmd_last, args=(chat_id,), daemon=True).start()
         else:
             self.reply(chat_id, "Не понимаю команду.\n\n" + HELP)
 
-    def cmd_summary(self, chat_id: str) -> None:
+    def cmd_summary(self, chat_id: str, arg: str = "") -> None:
         try:
             from snowball_bot import summary as summary_mod
 
-            self.reply(chat_id, "⏳ Считаю сводку по свечам…")
-            summary_mod.run(self.cfg, days=1, dry_run=False)
+            date = arg.strip() if arg and arg.strip()[:2] == "20" else None
+            self.reply(chat_id, "⏳ Считаю сводку по свечам…" + (f" ({date})" if date else ""))
+            summary_mod.run(self.cfg, days=1, dry_run=False, date=date)
         except Exception as e:  # noqa: BLE001
             log.error("summary: %s", e)
             self.reply(chat_id, f"❌ Не смог собрать сводку: {e}")

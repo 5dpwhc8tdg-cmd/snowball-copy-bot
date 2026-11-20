@@ -72,9 +72,11 @@ class JsonStore:
         return value if value is not None else default
 
     def set_meta(self, key: str, value: Any) -> None:
-        if self.data["meta"].get(key) != value:
-            self.data["meta"][key] = value
-            self.dirty = True
+        # ВАЖНО: помечаем «грязным» всегда. Иначе мутация словаря/списка,
+        # полученного из get_meta (тот же объект в памяти), не считается
+        # изменением — и правки молча не сохранялись.
+        self.data["meta"][key] = value
+        self.dirty = True
 
     # --- кэш карточек ----------------------------------------------------
     def get_asset(self, ticker: str, ttl: int = 86400) -> dict | None:
@@ -109,9 +111,7 @@ class JsonStore:
 
     def flush(self) -> None:
         """Немедленно записать состояние на диск."""
-        saver = getattr(self, "_save", None)
-        if callable(saver):
-            saver()
+        self.save()
 
     def close(self) -> None:
         self.save()

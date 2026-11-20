@@ -98,6 +98,9 @@ def board_info(isin: str) -> dict:
         "days_to_redemption": d.get("DAYSTOREDEMPTION"),
         "coupon_details": d.get("COUPON_DETAILS"),
         "bond_subtype": d.get("BOND_SUBTYPE"),
+        "faceunit": d.get("FACEUNIT"),
+        "facevalue": d.get("FACEVALUE"),
+        "lotsize": d.get("LOTSIZE"),
     }
 
 

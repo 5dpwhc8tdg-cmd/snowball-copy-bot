@@ -28,7 +28,7 @@ log = logging.getLogger(__name__)
 ISS = "https://iss.moex.com/iss"
 BOARD = "TQCB"  # Т+: Облигации, безадресные сделки — основной режим для ВДО
 
-SEC_COLS = "SECID,ISIN,SHORTNAME,FACEVALUE,PREVPRICE,LISTLEVEL,BONDTYPE,MATDATE,ACCRUEDINT,COUPONPERCENT,CALLOPTIONDATE,PUTOPTIONDATE,OFFERDATE"
+SEC_COLS = "SECID,ISIN,SHORTNAME,FACEVALUE,FACEUNIT,PREVPRICE,LISTLEVEL,BONDTYPE,MATDATE,ACCRUEDINT,COUPONPERCENT,CALLOPTIONDATE,PUTOPTIONDATE,OFFERDATE"
 MD_COLS = ("SECID,LAST,HIGH,LOW,OPEN,LASTCHANGEPRCNT,BID,OFFER,VALTODAY,NUMTRADES,"
            "UPDATETIME,YIELD,DURATION,CLOSEPRICE,WAPRICE")
 
@@ -74,6 +74,7 @@ def fetch_snapshot() -> dict[str, dict]:
             "isin": s.get("ISIN"),
             "name": s.get("SHORTNAME"),
             "facevalue": s.get("FACEVALUE"),
+            "faceunit": s.get("FACEUNIT"),
             "prev": s.get("PREVPRICE"),
             "listlevel": s.get("LISTLEVEL"),
             "bondtype": s.get("BONDTYPE"),

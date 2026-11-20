@@ -55,6 +55,7 @@ def journal_add(store, dips: list[dict], cfg: Config, profiles: dict | None = No
             "nkd": d.get("nkd") or 0,
             "drop": round(d.get("drop") or 0, 2),
             "dip_stats": prof.get("dip_stats"),
+            "kind": (d.get("verdict") or {}).get("kind") if isinstance(d.get("verdict"), dict) else d.get("verdict_kind"),
         })
     journal[day] = entries[-60:]
     # храним 30 дней
@@ -119,6 +120,7 @@ def evaluate(entry: dict, days_prices: dict[str, float] | None = None) -> dict |
     low_after = min(c["close"] for c in after)
     high_after = max(c["close"] for c in after)
     out = {
+        "kind": entry.get("kind"),
         "entry_price_pct": entry_price,
         "r30": ret_at(30),
         "r60": ret_at(60),
@@ -224,6 +226,26 @@ def build_summary(day: str, entries: list[dict], results: list[dict], cfg: Confi
                          f"просадка после входа {_pct(r['low_after'])}")
         parts.append("")
 
+    # проверка вердиктов: что стало с «брать» и с «не брать»
+    if ok:
+        by_kind = {}
+        for r in ok:
+            k = r.get("kind")
+            if not k:
+                continue
+            by_kind.setdefault(k, []).append(r.get("eod") or 0)
+        if by_kind:
+            names = {"buy": "🟢 БРАТЬ", "maybe": "🟡 ОСТОРОЖНО",
+                     "late": "🟠 ПОЗДНО", "no": "⛔ НЕ БРАТЬ"}
+            parts.append("🧭 <b>Проверка вердиктов</b> (к концу дня):")
+            for k in ("buy", "maybe", "late", "no"):
+                if k in by_kind:
+                    vals = by_kind[k]
+                    up = round(sum(1 for v in vals if v > 0) / len(vals) * 100)
+                    parts.append(f"• {names[k]}: {len(vals)} сигн., средний "
+                                 f"{_pct(sum(vals) / len(vals))}, в плюсе {up}%")
+            parts.append("")
+
     parts.append("📌 <i>Оценка приблизительная: без комиссии, спреда и налога; "
                  "цена входа — закрытие ближайшей 10-минутной свечи после сигнала.</i>")
     return "\n".join(parts)
@@ -232,12 +254,15 @@ def build_summary(day: str, entries: list[dict], results: list[dict], cfg: Confi
 # ---------------------------------------------------------------------------
 # Запуск
 # ---------------------------------------------------------------------------
-def run(cfg: Config, days: int = 1, dry_run: bool = False) -> int:
+def run(cfg: Config, days: int = 1, dry_run: bool = False, date: str | None = None) -> int:
     store = open_store(cfg)
     notifiers = build_notifiers(cfg)
+    # ВАЖНО: «сегодня» считаем по московскому времени (раньше брали UTC,
+    # и после 21:00 МСК сводка искала сигналы в следующем дне — «сигналов не было»)
     today = dipscanner.now_msk().strftime("%Y-%m-%d")
-    target_days = [(dipscanner.now_msk() - timedelta(days=i)).strftime("%Y-%m-%d")
-                   for i in range(max(1, days))]
+    target_days = ([date] if date else
+                   [(dipscanner.now_msk() - timedelta(days=i)).strftime("%Y-%m-%d")
+                    for i in range(max(1, days))])
 
     all_entries, all_results = [], []
     for day in reversed(target_days):
@@ -262,7 +287,25 @@ def run(cfg: Config, days: int = 1, dry_run: bool = False) -> int:
         all_entries.extend(entries)
 
     breadth = store.get_meta("market_breadth", {}) or {}
-    text = build_summary(today, all_entries, all_results, cfg, breadth)
+    if not all_entries:
+        # подсказка: когда сигналы были в последний раз (журнал хранит 30 дней)
+        journal = store.get_meta(JOURNAL_KEY, {}) or {}
+        last_day = max((d for d, v in journal.items() if v), default=None)
+        store.close()
+        if last_day:
+            text = (f"📊 <b>Сводка дня</b> — {datetime.fromisoformat(today):%d.%m.%Y}\n\n"
+                    f"Сегодня сигналов не было (журнал пуст). Последний день с сигналами — "
+                    f"{datetime.fromisoformat(last_day):%d.%m.%Y}, там {len(journal[last_day])} шт.\n"
+                    f"Собрать за него: <code>/summary {last_day}</code> или "
+                    f"Actions → «Сводка дня» с days=2.")
+        else:
+            text = (f"📊 <b>Сводка дня</b> — {datetime.fromisoformat(today):%d.%m.%Y}\n\n"
+                    "Журнал сигналов пока пуст: он наполняется, когда сканер реально "
+                    "отправляет сигналы (или по команде /dips).")
+
+    else:
+        text = build_summary(today, all_entries, all_results, cfg, breadth)
+
     store.close()
 
     if dry_run:

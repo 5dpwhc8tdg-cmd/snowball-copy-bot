@@ -449,6 +449,7 @@ def main(argv: list[str] | None = None) -> int:
     p_sum = sub.add_parser("summary", help="дневная сводка по сигналам: что было бы, если купить")
     p_sum.add_argument("--dry-run", action="store_true")
     p_sum.add_argument("--days", type=int, default=1, help="за сколько последних дней (по умолчанию 1)")
+    p_sum.add_argument("--date", default=None, help="конкретный день, например 2026-11-20")
     args = parser.parse_args(argv)
 
     load_dotenv(args.env)
@@ -476,7 +477,8 @@ def main(argv: list[str] | None = None) -> int:
         from . import summary
 
         return summary.run(cfg, days=getattr(args, "days", 1),
-                           dry_run=getattr(args, "dry_run", False))
+                           dry_run=getattr(args, "dry_run", False),
+                           date=getattr(args, "date", None))
 
     store = open_store(cfg)
     notifiers = build_notifiers(cfg)

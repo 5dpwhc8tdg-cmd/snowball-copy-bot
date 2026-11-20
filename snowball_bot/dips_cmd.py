@@ -17,7 +17,7 @@ from datetime import datetime
 import html
 import logging
 
-from . import analytics, dipscanner, formatter, ratings as ratings_api, sizing
+from . import analytics, dipscanner, formatter, ratings as ratings_api, sizing, verdict as verdict_mod
 from .config import Config
 from .notify import build_notifiers
 from .store import open_store
@@ -144,6 +144,18 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
     if not cfg.only_rating_a_plus:
         plan += "\n<i>Без теста неквала берите только выпуски с рейтингом A+ (у остальных — максимум 100 тыс. ₽ по «праву последнего слова»)</i>"
     now_txt = dipscanner.now_msk().strftime("%H:%M")
+    # счёт по вердиктам — сразу видно, есть ли что-то к покупке
+    kinds = {}
+    for d in clean[:6]:
+        v = verdict_mod.decide(d, profiles.get(d.get("isin") or "") or {}, breadth, cfg)
+        kinds[v.kind] = kinds.get(v.kind, 0) + 1
+    if kinds:
+        summary_line = " · ".join(
+            f"{verdict_mod.ICON[k]} {verdict_mod.LABEL[k].lower()}: {kinds[k]}"
+            for k in (verdict_mod.BUY, verdict_mod.MAYBE, verdict_mod.LATE, verdict_mod.NO)
+            if kinds.get(k))
+        head += f"\n<b>Итог:</b> {summary_line}"
+
     parts = [head,
              f"<i>MOEX, падение от максимума дня / за {minutes} мин · "
              f"сигнал собран в {now_txt} МСК</i>",
@@ -152,56 +164,65 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
     parts.append("")
 
     def line(d: dict, clean_flag: bool) -> str:
+        """Компактная карточка: 6 строк + вердикт. Все детали — по ссылкам."""
         name = html.escape(str(d.get("name") or d["secid"]))
-        price_pct = d.get("price_pct")
+        price_pct = d.get("price_pct") or 0
         rating = rating_map.get(d.get("isin") or "")
-        rating_txt = f" · рейтинг {html.escape(rating)}" if rating else " · рейтинга A+ нет"
-        icon = "🟢" if clean_flag else "⛔"
-        txt = [
-            f"{icon} <b>{name}</b> <code>{html.escape(d['secid'])}</code>",
-            f"Падение <b>−{d['drop']:.1f}%</b> (день −{d['day_drop']:.1f}%)"
-            + (f", за {minutes} мин −{d['win_drop']:.1f}%" if d.get("win_drop") else ""),
-            f"Цена {price_pct:.1f}% от номинала{rating_txt}",
-        ]
-        if clean_flag:
-            txt.extend(_timing_lines(d))
-        # НКД и «сколько стоит лот» (НКД в рублях → в % от рублёвой цены лота)
-        nkd = d.get("nkd")
+        prof = profiles.get(d.get("isin") or "") or {}
+        v = verdict_mod.decide(d, prof, breadth, cfg)
+        tm = d.get("timing") or {}
+
+        # 1-я строка: вердикт + имя
+        head = f"{v.icon} <b>{v.label}</b> · <b>{name}</b> <code>{html.escape(d['secid'])}</code>"
+
+        # 2-я: что произошло, со временем
+        when = ""
+        if tm.get("peak_time") and tm.get("low_time"):
+            when = f" · {tm['peak_time']}→{tm['low_time']}"
+            if tm.get("minutes_since_low") is not None:
+                when += f" ({tm['minutes_since_low']} мин назад)"
+        evt = f"−{d['drop']:.1f}%{when} → {price_pct:.1f}% от номинала"
+
+        # 3-я: деньги — лот, НКД, сколько брать вам
         face = d.get("facevalue") or 1000
-        rub_now = (price_pct / 100) * face if price_pct else 0
-        if nkd:
-            nkd_share = (nkd / rub_now * 100) if rub_now else None
-            txt.append(f"НКД {_num(nkd, 2)} ₽/шт"
-                       + (f" — {_num(nkd_share, 1)}% от цены (платите сверху)" if nkd_share else ""))
-        if d.get("coupon_pct"):
-            txt.append(f"Купон {_num(d['coupon_pct'], 1)}% годовых")
-        # оборот/сделки/спред
-        if clean_flag:
-            txt.append(
-                f"Сделок {d['numtrades']}, оборот {_fmt_money(d['valtoday'])}"
-                + (f", спред {(d['offer'] - d['bid']) / d['bid'] * 100:.1f}%"
-                   if d.get("bid") and d.get("offer") and d["bid"] > 0 else "")
-            )
-        else:
-            txt.append("Причина отсева: " + html.escape("; ".join(d["reasons"][:2])))
-        # сколько брать мне: считаем от доли капитала, лоты в рублях
-        rub_price = rub_now
-        if rub_price and cfg.my_capital:
-            budget = cfg.my_capital * cfg.my_max_position_pct / 100
-            lots = max(1, int(budget // (rub_price + (nkd or 0))))
-            cost = lots * (rub_price + (nkd or 0))
-            txt.append(f"🧮 <b>Вам:</b> {lots} шт ≈ {_fmt_money(cost)} "
-                       f"({_num(cost / cfg.my_capital * 100, 1)}% капитала; бюджет на идею "
-                       f"{_fmt_money(budget)})")
-            txt.append(f"🎯 План: купить лимитной заявкой, продать через {cfg.hold_days} дн. "
-                       f"или при +2% — по разбору его сделок 1–3 дня дают максимум")
-        # расширенная аналитика
-        for ln in formatter.analytics_lines(profiles.get(d.get("isin") or ""), price_pct=price_pct):
-            txt.append(ln)
-        url = f"https://snowball-income.com/public/asset/{d['secid']}.MCX.RUB"
-        txt.append(f'🔗 <a href="{url}">карточка</a> · '
-                   f'<a href="https://www.moex.com/ru/issue.aspx?code={d["secid"]}">MOEX</a>')
-        return "\n".join(txt)
+        rub_now = (price_pct / 100) * face
+        nkd = d.get("nkd") or 0
+        nkd_txt = f" + НКД {_num(nkd, 2)} ₽" if nkd else ""
+        budget = cfg.my_capital * cfg.my_max_position_pct / 100 if cfg.my_capital else 0
+        lots = max(1, int(budget // (rub_now + nkd))) if (budget and rub_now) else 0
+        money = f"лот {_fmt_money(rub_now)}{nkd_txt}"
+        if lots:
+            money += f" · вам {lots} шт ≈ {_fmt_money(lots * (rub_now + nkd))}"
+
+        # 4-я: ликвидность и рейтинг
+        avg_val = prof.get("avg_value_5d")
+        liq = f"оборот 5 дн. {_fmt_money(avg_val)}/день" if avg_val else f"оборот дня {_fmt_money(d.get('valtoday'))}"
+        if d.get("bid") and d.get("offer") and d["bid"] > 0:
+            liq += f" · спред {(d['offer'] - d['bid']) / d['bid'] * 100:.1f}%"
+        liq += f" · рейтинг {rating}" if rating else " · рейтинга A+ нет"
+
+        # 5-я: рынок и статистика бумаги одной строкой
+        bits = []
+        if breadth and breadth.get("down_share") is not None:
+            bits.append(f"на рынке в минусе {breadth['down_share']:.0f}%")
+        if prof.get("prev_drops") is not None:
+            med = prof.get("prev_drops_rebound_median_pct")
+            up = prof.get("prev_drops_up_share_pct")
+            if med is None:
+                bits.append("падений такой глубины раньше не было")
+            else:
+                bits.append(f"её падения: n={prof['prev_drops']}, медиана 2 дн. {med:+.1f}%, в плюсе {up:.0f}%")
+        if prof.get("drawdown_from_max_pct") is not None:
+            bits.append(f"просадка от годового максимума {prof['drawdown_from_max_pct']:.0f}%")
+        ctx = " · ".join(bits)
+
+        # 6-я: почему такой вердикт
+        why = v.short(2)
+        link = (f'<a href="https://www.moex.com/ru/issue.aspx?code={d["secid"]}">MOEX</a> · '
+                f'<a href="https://snowball-income.com/public/asset/{d["secid"]}.MCX.RUB">карточка</a>')
+
+        out = [head, evt, money, liq, ctx, f"<i>{html.escape(why)}</i> · {link}"]
+        return "\n".join(x for x in out if x)
 
     if clean:
         parts.append("✅ <b>Похоже на панику, а не на дефолт</b>")
@@ -211,13 +232,12 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
             parts.append("")
         for d in clean[:6]:
             parts.append(line(d, True))
-            parts.append("➖➖➖➖➖➖➖➖")
+            parts.append("")
     if bad:
         parts.append("")
         parts.append("⛔ <b>Отсеяно (не покупать в падении)</b>")
-        for d in bad[:10]:
+        for d in bad[:5]:
             parts.append(line(d, False))
-            parts.append("")
 
     parts.append(
         "📌 <i>Напоминание: по замерам на этом портфеле медианный отскок через 2 часа "
@@ -335,6 +355,13 @@ def run(cfg: Config, once: bool = True, dry_run: bool = False) -> int:
             log.warning("Аналитика по %s недоступна: %s", isin, e)
 
     breadth = store.get_meta("market_breadth", {}) or {}
+    # вердикт по каждой бумаге — кладём в кандидата, чтобы он попал и в журнал
+    for d in dips:
+        try:
+            v = verdict_mod.decide(d, profiles.get(d.get("isin") or "") or {}, breadth, cfg)
+            d["verdict_kind"] = v.kind
+        except Exception:  # noqa: BLE001
+            pass
     text = build_message(dips, rating_map, cfg, cfg.dip_window, profiles, breadth)
     plain = formatter.to_plain(text)
 
