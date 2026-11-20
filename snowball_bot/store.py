@@ -92,6 +92,9 @@ class Store:
         )
         self.conn.commit()
 
+    def reload(self) -> None:
+        """Перечитать состояние с диска (для SQLite не требуется)."""
+
     def flush(self) -> None:  # noqa: D401
         """По умолчанию ничего не делаем — переопределяют те, кому нужно."""
 

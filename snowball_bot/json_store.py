@@ -91,6 +91,21 @@ class JsonStore:
         self.data["assets"][ticker] = {"payload": payload, "updated_at": int(time.time())}
         self.dirty = True
 
+    def reload(self) -> None:
+        """Перечитать состояние с диска (после обновления файла из git)."""
+        if not os.path.exists(self.path):
+            return
+        try:
+            with open(self.path, encoding="utf-8") as f:
+                loaded = json.load(f)
+            if isinstance(loaded, dict):
+                self.data["seen"] = dict(loaded.get("seen") or {})
+                self.data["meta"] = dict(loaded.get("meta") or {})
+                self.data["assets"] = dict(loaded.get("assets") or {})
+                self.dirty = False
+        except Exception:  # noqa: BLE001
+            pass
+
     # --- сохранение ------------------------------------------------------
     def save(self) -> bool:
         """Атомарная запись. Возвращает True, если файл реально изменился."""

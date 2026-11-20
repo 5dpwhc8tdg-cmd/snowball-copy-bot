@@ -110,10 +110,17 @@ class CommandBot:
         import os
 
         try:
+            # сначала сохраняем то, что накопили сами (offset команд и т.п.)
+            try:
+                self.store.flush()
+            except Exception:  # noqa: BLE001
+                pass
             if os.environ.get("GITHUB_ACTIONS"):
                 subprocess.run(["git", "fetch", "--quiet", "origin", "HEAD"], timeout=25)
                 subprocess.run(["git", "checkout", "--quiet", "FETCH_HEAD", "--", "state"],
                                timeout=25, check=False)
+                # файл обновился — перечитываем его в память, иначе видим старое
+                self.store.reload()
             return True
         except Exception as e:  # noqa: BLE001
             log.warning("Не смог обновить состояние из репозитория: %s", e)
