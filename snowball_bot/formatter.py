@@ -311,6 +311,11 @@ def format_tx(
     if my_size is not None:
         lines.append(my_size_line(my_size))
 
+    # как именно копировать: лимит по его цене и честный горизонт (COPY_LAG.md)
+    if kind == "buy":
+        from . import copy as copy_lib
+        lines.extend(copy_lib.lines(tx, info))
+
     if profile:
         for ln in analytics_lines(profile, price_pct=(price / nominal * 100) if (price and nominal) else None):
             lines.append(ln)
