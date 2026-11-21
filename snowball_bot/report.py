@@ -147,6 +147,18 @@ def run_report(cfg: Config, days: int = 7, dry_run: bool = False) -> int:
                          f"худшая {_pct(min(xs))}")
     parts.append("")
 
+    # 4.5. срабатывание цели +1% (главное правило после замеров)
+    tgt = [r.get("target_2h") for r in ok if r.get("target_2h") is not None]
+    if tgt:
+        hit = sum(1 for x in tgt if x)
+        parts.append("🎯 <b>Цель +1% в первые 2 часа</b>")
+        parts.append(f"• сработала бы в {hit} из {len(tgt)} сигналов ({hit / len(tgt) * 100:.0f}%)")
+        if sent:
+            sent_hit = [r.get("target_2h") for r in sent if r.get("target_2h") is not None]
+            if sent_hit:
+                parts.append(f"• по отправленным: {sum(1 for x in sent_hit if x)} из {len(sent_hit)}")
+        parts.append("")
+
     # 5. на 2-й день
     d2 = [r["day2"] for r in ok if r.get("day2") is not None]
     if d2:

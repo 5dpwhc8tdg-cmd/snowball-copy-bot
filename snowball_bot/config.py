@@ -112,6 +112,12 @@ class Config:
     dip_min_value: float = field(default_factory=lambda: _env_float("DIP_MIN_VALUE", 30000))
     dip_only_clean: bool = field(default_factory=lambda: _env_bool("DIP_ONLY_CLEAN", True))
     dip_cooldown_hours: int = field(default_factory=lambda: _env_int("DIP_COOLDOWN_HOURS", 6))
+    # Измерено на 262 событиях (29 дней, BACKTEST.md):
+    #   цель +1% даёт медиану +1,00% против −0,95% у «держать до закрытия»;
+    #   падения 9–15% отскакивают на +0,54% при риске −8,4%.
+    dip_target_pct: float = field(default_factory=lambda: _env_float("DIP_TARGET_PCT", 1.0))
+    dip_skip_drop_min: float = field(default_factory=lambda: _env_float("DIP_SKIP_DROP_MIN", 9.0))
+    dip_skip_drop_max: float = field(default_factory=lambda: _env_float("DIP_SKIP_DROP_MAX", 15.0))
 
     # --- где хранить состояние -------------------------------------------
     # sqlite (VPS/домашний ПК) или json (GitHub Actions: файл коммитится в репозиторий)

@@ -100,6 +100,15 @@ def decide(d: dict, profile: dict | None = None, breadth: dict | None = None,
                       f"структурный продукт: сдувание к номиналу при погашении")
     if price_pct and price_pct < 70:
         blocks.append(f"цена {price_pct:.0f}% от номинала — рынок уже считает выпуск проблемным")
+    # Глубокая просадка 9–15%: измерено 262 события — отскок всего +0,54%
+    # (в плюсе 61%), риск после входа −8,4%, к закрытию −4,63%.
+    skip_lo = getattr(cfg, "dip_skip_drop_min", 9.0) or 0
+    skip_hi = getattr(cfg, "dip_skip_drop_max", 15.0) or 0
+    if skip_lo and skip_hi and drop and skip_lo <= drop < skip_hi:
+        d["skip_band"] = True
+        blocks.append(
+            f"падение {drop:.1f}% — по замерам такие не отскакивают: "
+            f"медиана +0,5%, риск −8,4% после входа")
     if not profile:
         blocks.append("нет данных по истории — оценить отскоки нечем")
 

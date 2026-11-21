@@ -151,7 +151,8 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
             f"(«чистых»: {len(clean)})")
     plan = (f"<i>Ваш капитал {_fmt_money(cfg.my_capital)} · на идею до "
             f"{_fmt_money(cfg.my_capital * cfg.my_max_position_pct / 100)} · "
-            f"держать {cfg.hold_days} дн. или до +2% · одновременно не больше "
+            f"цель +{_num(getattr(cfg, 'dip_target_pct', 1.0) or 1.0, 1)}% в первые 2 часа "
+            f"(иначе на следующий день минус) · одновременно не больше "
             f"{max_ideas} идей, резерв {_fmt_money(reserve)}</i>")
     if not cfg.only_rating_a_plus:
         plan += "\n<i>Без теста неквала берите только выпуски с рейтингом A+ (у остальных — максимум 100 тыс. ₽ по «праву последнего слова»)</i>"
@@ -227,9 +228,16 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
             out.append(size_txt)
         out.append("")
 
-        # ── ожидание ──────────────────────────────────────────────────────
-        if clean_flag:
-            out.append("🎯 <b>Ожидание:</b> " + rebound_lib.explain(tm.get("minutes_since_low"), d["drop"]))
+        # ── цель и горизонт (измерено, см. BACKTEST.md) ────────────────────
+        if clean_flag and v.kind in (verdict_mod.BUY, verdict_mod.MAYBE, verdict_mod.LATE):
+            target = getattr(cfg, "dip_target_pct", 1.0) or 1.0
+            tgt_price = price_pct * (1 + target / 100)
+            out.append(f"🎯 <b>Цель +{_num(target, 1)}%</b>: лимит на продажу "
+                       f"<code>{_num(tgt_price, 2)}</code>% от номинала")
+            out.append("⏳ <i>Сигнал живёт ~2 часа: максимум отскока приходится на первые "
+                       "60–120 минут, к закрытию медиана −0,95%. Не успели — не входите.</i>")
+            out.append("")
+            out.append("📐 <b>Ожидание:</b> " + rebound_lib.explain(tm.get("minutes_since_low"), d["drop"]))
             out.append("")
 
         # ── качество бумаги ───────────────────────────────────────────────
@@ -283,10 +291,12 @@ def build_message(dips: list[dict], rating_map: dict[str, str], cfg: Config, min
         for d in bad[:5]:
             parts.append(line(d, False))
 
+    target = getattr(cfg, "dip_target_pct", 1.0) or 1.0
     parts.append(
-        "📌 <i>Напоминание: по замерам на этом портфеле медианный отскок через 2 часа "
-        "+1,3%, но при входе с задержкой 10 минут — только +0,1%. Ловить нужно «в моменте», "
-        "и лучше лимитной заявкой ниже рынка.</i>"
+        f"📌 <i>Замеры на 262 событиях за 29 дней: максимум отскока в первые 2 часа "
+        f"медианно +1,2% (в плюсе 77%), к закрытию −0,95%. Поэтому цель — "
+        f"+{_num(target, 1)}% лимитом, а не «подожду ещё». Падения глубже 9% "
+        f"не сигналю: там +0,5% при риске −8,4%.</i>"
     )
     return "\n".join(parts)
 

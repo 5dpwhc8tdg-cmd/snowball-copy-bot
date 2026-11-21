@@ -69,6 +69,8 @@ def journal_add(store, dips: list[dict], cfg: Config, profiles: dict | None = No
             "numtrades": d.get("numtrades"),
             "dip_stats": prof.get("dip_stats"),
             "kind": d.get("verdict_kind"),
+            "target_pct": getattr(cfg, "dip_target_pct", 1.0),
+            "skip_band": bool(d.get("skip_band")),
             "sent": sent,
             "is_bad": bool(d.get("is_bad")),
         })
@@ -159,10 +161,25 @@ def evaluate(entry: dict, days_prices: dict[str, float] | None = None) -> dict |
         "low_after": (low_after - entry_price) / entry_price * 100,
         "high_after": (high_after - entry_price) / entry_price * 100,
         "limit_filled": low_after <= entry_price * 0.99,
+        # сработала ли цель +1% (лимит на продажу) в первые 2 часа
+        "target_2h": _target_hit(after, entry_price, entry.get("target_pct") or 1.0, 120),
         "limit_eod": (candles[-1]["close"] - entry_price * 0.99) / (entry_price * 0.99) * 100,
         "day2": (days_prices or {}).get("day2"),
     }
     return out
+
+
+def _target_hit(candles: list[dict], entry: float, target_pct: float, minutes: int) -> bool | None:
+    """Дошла ли цена до цели +X% в пределах `minutes` минут после входа."""
+    if not candles or not entry:
+        return None
+    first = candles[0]["dt"] + timedelta(minutes=minutes)
+    for c in candles:
+        if c["dt"] > first:
+            return False
+        if (c["close"] - entry) / entry * 100 >= target_pct:
+            return True
+    return False
 
 
 def day2_close(isin: str, day: str) -> float | None:
