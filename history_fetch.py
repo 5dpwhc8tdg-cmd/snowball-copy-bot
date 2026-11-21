@@ -110,14 +110,25 @@ def fetch_candles(secid: str, frm: str, till: str, interval: int = 10,
 
 if __name__ == "__main__":
     import sys
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
     n = int(sys.argv[1]) if len(sys.argv) > 1 else 5
     days = trading_days(n)
-    print(f"качаю {len(days)} дней: {days[0]} … {days[-1]}")
-    for d in days:
-        rows = fetch_day(d)
-        with_close = [r for r in rows if r.get("CLOSE")]
-        print(f"  {d}: бумаг {len(rows):5d}, с закрытием {len(with_close):5d}")
+    print(f"качаю {len(days)} дней: {days[0]} … {days[-1]}", flush=True)
+    done = 0
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        futs = {ex.submit(fetch_day, d): d for d in days}
+        for f in as_completed(futs):
+            done += 1
+            d = futs[f]
+            try:
+                rows = f.result()
+            except Exception as e:  # noqa: BLE001
+                print(f"  ! {d}: {e}", flush=True)
+                continue
+            with_close = [r for r in rows if r.get("CLOSE")]
+            print(f"  {d}: бумаг {len(rows):5d}, с закрытием {len(with_close):5d} "
+                  f"({done}/{len(days)})", flush=True)
 
 
 def fetch_bond_history(secid: str, frm: str, till: str, refresh: bool = False) -> list[dict]:

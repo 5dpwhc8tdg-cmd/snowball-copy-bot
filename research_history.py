@@ -191,3 +191,38 @@ if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sy
     Path("data/hist/measured.json").write_text(json.dumps(res, ensure_ascii=False, indent=1))
     ok = [r for r in res if r.get("measured")]
     print(f"событий: {len(res)}, измерено по свечам: {len(ok)}")
+
+
+def measure_chunked(chunk: int = 120) -> None:
+    """Замер по частям: 793 события разом упираются в память песочницы."""
+    import gc
+
+    from history_fetch import fetch_candles
+
+    events = json.loads(Path("data/hist/events.json").read_text())
+    todo = [e for e in events if e["clean"]]
+    out_path = Path("data/hist/measured.json")
+    done = []
+    for start in range(0, len(todo), chunk):
+        part = todo[start:start + chunk]
+        for n, e in enumerate(part, 1):
+            cs = fetch_candles(e["secid"], e["day"], e["day"], 10)
+            rec = dict(e)
+            rec["candles"] = len(cs)
+            res = scan_intraday(cs, e["prev_close"])
+            if res:
+                rec.update(res)
+                rec["measured"] = True
+            else:
+                rec["measured"] = False
+                rec["why_no_trigger"] = "нет свечей" if not cs else "падение не дошло до порога"
+            done.append(rec)
+        del part, cs, res
+        gc.collect()
+        out_path.write_text(json.dumps(done, ensure_ascii=False))
+        print(f"  {len(done)}/{len(todo)}", flush=True)
+    print(f"готово: {len(done)} событий → {out_path}")
+
+
+if __name__ == "__main__" and len(__import__("sys").argv) > 1 and __import__("sys").argv[1] == "chunked":
+    measure_chunked()
