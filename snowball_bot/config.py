@@ -103,7 +103,11 @@ class Config:
     console: bool = field(default_factory=lambda: _env_bool("CONSOLE_OUTPUT", False))
 
     # --- сканер резких падений (dips) -------------------------------------
-    dip_enabled: bool = field(default_factory=lambda: _env_bool("DIP_ENABLED", True))
+    # ВЫКЛЮЧЕНО по решению владельца (21.11.2026): замеры на 95 днях/776 событиях
+    # показали, что правило «цель +1%» в среднем около нуля (−0,14% на сделку).
+    # Сигналы по падениям ничего не зарабатывают; журнал и разбор остаются.
+    # Включить обратно: DIP_ENABLED=1 в окружении или здесь True.
+    dip_enabled: bool = field(default_factory=lambda: _env_bool("DIP_ENABLED", False))
     dip_min_drop: float = field(default_factory=lambda: _env_float("DIP_MIN_DROP", 4.0))
     dip_day_drop: float = field(default_factory=lambda: _env_float("DIP_DAY_DROP", 3.0))
     dip_window: int = field(default_factory=lambda: _env_int("DIP_WINDOW", 30))

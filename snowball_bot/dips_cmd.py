@@ -326,6 +326,13 @@ def remember_cooldown(store, dips: list[dict], hours: int | None = None) -> None
 
 
 def run(cfg: Config, once: bool = True, dry_run: bool = False) -> int:
+    # Сигналы по падениям выключены по решению владельца: замеры на 95 днях
+    # (776 событий) показали ожидание около нуля — −0,14% на сделку. Сканирование
+    # и журнал при этом продолжают работать: они нужны, чтобы через месяц-два
+    # перепроверить правила на свежих данных (DIP_JOURNAL_ONLY=1).
+    if not getattr(cfg, "dip_enabled", False):
+        log.info("Сигналы по падениям выключены (DIP_ENABLED=0): тихо собираю журнал")
+        return run_journal_only(cfg)
     store = open_store(cfg)
     notifiers = build_notifiers(cfg)
 
@@ -484,3 +491,37 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+def run_journal_only(cfg: Config) -> int:
+    """Тихий режим: сканируем и пишем журнал, но ничего не отправляем.
+
+    Зачем не выключать совсем: журнал — это данные для следующей проверки правил.
+    Через месяц-два на свежих событиях видно, изменились ли отскоки, и тогда
+    сигналы можно включить обратно (DIP_ENABLED=1) уже на новых цифрах.
+    """
+    store = open_store(cfg)
+    try:
+        dips = dipscanner.find_dips(
+            store,
+            min_drop_pct=cfg.dip_min_drop,
+            window_minutes=cfg.dip_window,
+            day_drop_pct=cfg.dip_day_drop,
+            min_price_pct=cfg.dip_min_price_pct,
+            min_trades=cfg.dip_min_trades,
+            min_value=cfg.dip_min_value,
+        )
+        if not dips:
+            log.info("Журнал: падений не найдено")
+            return 0
+        try:
+            from .summary import journal_add
+            journal_add(store, dips, cfg, None, sent=False)
+        except Exception as e:  # noqa: BLE001
+            log.warning("Журнал не записан: %s", e)
+        clean = [d for d in dips if not d.get("is_bad")]
+        log.info("Журнал: записано падений %d (чистых %d), отправка выключена",
+                 len(dips), len(clean))
+        return 0
+    finally:
+        store.close()

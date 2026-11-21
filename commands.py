@@ -222,6 +222,15 @@ class CommandBot:
             self.busy.discard("now")
 
     def cmd_dips(self, chat_id: str) -> None:
+        if not getattr(self.cfg, "dip_enabled", False):
+            self.reply(chat_id,
+                       "📴 <b>Сигналы по падениям выключены</b>\n\n"
+                       "Замеры на 95 днях и 776 событиях дали ожидание около нуля "
+                       "(−0,14% на сделку): ловить отскоки убыточно.\n\n"
+                       "Журнал падений продолжает копиться — вернусь с проверкой, "
+                       "когда наберётся свежая статистика. Включить вручную: "
+                       "команда с DIP_ENABLED=1.")
+            return
         if "dips" in self.busy:
             self.reply(chat_id, "⏳ Скан уже идёт, подождите…")
             return
