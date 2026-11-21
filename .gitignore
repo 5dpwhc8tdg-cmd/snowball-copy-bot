@@ -1,5 +1,1 @@
-.env
-data/
-state/.state-*.json
-__pycache__/
-*.pyc
+data/hist/
