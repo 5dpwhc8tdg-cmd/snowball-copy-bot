@@ -118,3 +118,57 @@ if __name__ == "__main__":
         rows = fetch_day(d)
         with_close = [r for r in rows if r.get("CLOSE")]
         print(f"  {d}: бумаг {len(rows):5d}, с закрытием {len(with_close):5d}")
+
+
+def fetch_bond_history(secid: str, frm: str, till: str, refresh: bool = False) -> list[dict]:
+    """Вся дневная история одной бумаги за период (постранично).
+
+    Для 3-летнего анализа «что покупает владелец»: один запрос на бумагу
+    отдаёт все её дни (цена, доходность, дюрация, купон, оборот).
+    """
+    CACHE.mkdir(parents=True, exist_ok=True)
+    path = CACHE / f"bond-{secid}-{frm}-{till}.json"
+    if path.exists() and not refresh:
+        return json.loads(path.read_text())
+    out: list[dict] = []
+    start = 0
+    while True:
+        url = (f"{ISS}/history/engines/stock/markets/bonds/securities/{secid}.json"
+               f"?iss.meta=off&from={frm}&till={till}&start={start}")
+        data = _get(url)
+        if not data or "history" not in data:
+            break
+        block = data["history"]
+        cols = block.get("columns") or []
+        chunk = [dict(zip(cols, r)) for r in block.get("data") or []]
+        out.extend(chunk)
+        if len(chunk) < 100:
+            break
+        start += 100
+    path.write_text(json.dumps(out, ensure_ascii=False))
+    return out
+
+
+def fetch_index(secid: str, frm: str, till: str, refresh: bool = False) -> list[dict]:
+    """История индекса (RGBI — индекс гособлигаций, база для альфы)."""
+    CACHE.mkdir(parents=True, exist_ok=True)
+    path = CACHE / f"index-{secid}-{frm}-{till}.json"
+    if path.exists() and not refresh:
+        return json.loads(path.read_text())
+    out: list[dict] = []
+    start = 0
+    while True:
+        url = (f"{ISS}/history/engines/stock/markets/index/securities/{secid}.json"
+               f"?iss.meta=off&from={frm}&till={till}&start={start}")
+        data = _get(url)
+        if not data or "history" not in data:
+            break
+        block = data["history"]
+        cols = block.get("columns") or []
+        chunk = [dict(zip(cols, r)) for r in block.get("data") or []]
+        out.extend(chunk)
+        if len(chunk) < 100:
+            break
+        start += 100
+    path.write_text(json.dumps(out, ensure_ascii=False))
+    return out
