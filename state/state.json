@@ -74693,21 +74693,24 @@
    "payload": {
     "amort_count": 1,
     "amort_upcoming": 1,
-    "avg_value_5d": 6194744.64,
+    "avg_value_5d": 3413499.38,
     "bond_subtype": "До оферты (put)",
     "calloption": null,
     "coupon_count": 20,
     "coupon_details": "Фиксированный с неизвестными купонами",
     "coupon_period_days": null,
     "days_history": 171,
-    "days_to_redemption": "601",
-    "drawdown_from_max_pct": -9.98199639927986,
-    "has_prospectus": "1",
+    "days_to_redemption": "598",
+    "drawdown_from_max_pct": -10.482096419283861,
+    "faceunit": "SUR",
+    "facevalue": "1000",
+    "has_prospectus": "0",
+    "lotsize": null,
     "max_52w": 99.98,
     "min_52w": 87.8,
     "next_amort_date": "2028-07-13",
-    "next_coupon_date": "2026-11-21",
-    "next_coupon_days": 1,
+    "next_coupon_date": "2026-12-21",
+    "next_coupon_days": 27,
     "next_coupon_pct": 21.0,
     "next_coupon_value": 17.26,
     "offerdate": null,
@@ -74716,7 +74719,7 @@
     "prev_drops_up_share_pct": 80.0,
     "putoption": null
    },
-   "updated_at": 1795130284
+   "updated_at": 1795434344
   },
   "profile:RU000A10C758": {
    "payload": {
@@ -75795,7 +75798,6 @@
      "RU000A0JXQK2": "AAA",
      "RU000A0JXR84": "AAA",
      "RU000A0JXRD5": "AA-",
-     "RU000A0JXS59": "AA-",
      "RU000A0JXSS1": "AA",
      "RU000A0JXXD3": "AAA",
      "RU000A0JXXE1": "AAA",
@@ -75944,12 +75946,10 @@
      "RU000A103U44": "AAA",
      "RU000A103U51": "AAA",
      "RU000A103VQ0": "AAA",
-     "RU000A103X90": "AAA",
      "RU000A103XS2": "AAA",
      "RU000A103XT0": "AAA",
      "RU000A103XV6": "AAA",
      "RU000A103XW4": "AAA",
-     "RU000A103Y16": "AAA",
      "RU000A103ZJ6": "AAA",
      "RU000A104081": "AAA",
      "RU000A1040T6": "AAA",
@@ -76164,7 +76164,6 @@
      "RU000A10A3Z4": "AA-",
      "RU000A10A6N3": "AAA",
      "RU000A10A6X2": "AAA",
-     "RU000A10A7F7": "AAA",
      "RU000A10A7N1": "AAA",
      "RU000A10A7W2": "AA+",
      "RU000A10AA10": "AA",
@@ -76366,7 +76365,6 @@
      "RU000A10DHT7": "AA-",
      "RU000A10DHX9": "A+",
      "RU000A10DJH8": "AA-",
-     "RU000A10DJP1": "AAA",
      "RU000A10DKS3": "AA",
      "RU000A10DM21": "AAA",
      "RU000A10DMD1": "AAA",
@@ -76464,7 +76462,6 @@
      "RU000A10ENP1": "AAA",
      "RU000A10EPP6": "AA-",
      "RU000A10EPQ4": "AA",
-     "RU000A10EPR2": "AA",
      "RU000A10EQ34": "AA",
      "RU000A10EQ91": "AAA",
      "RU000A10EQA6": "AAA",
@@ -76621,6 +76618,7 @@
      "RU000A10GCC7": "AA+",
      "RU000A10GCD5": "AA+",
      "RU000A10GCE3": "AA+",
+     "RU000A10GCG8": "AA+",
      "RU000A10GCK0": "AA+",
      "RU000A10GCV7": "AA-",
      "RU000A10GCZ8": "AA",
@@ -76638,10 +76636,11 @@
      "RU000A10GGX4": "AAA",
      "RU000A10GGY2": "AA",
      "RU000A10GHF9": "AA-",
-     "RU000A10GJ07": "AAA"
+     "RU000A10GJ07": "AAA",
+     "RU000A10GLD6": "AA"
     }
    },
-   "updated_at": 1795069627
+   "updated_at": 1795434337
   }
  },
  "meta": {
@@ -78946,6 +78945,7 @@
   "01a1f91a-1112-757d-bee7-4fc8e9585735": 1795207667,
   "01a1f93d-4930-7e61-8091-1bf67b8dd1b2": 1795207667,
   "01a1f95a-7102-7495-96a5-69f25909d69e": 1795207667,
-  "01a1f95b-3521-7f93-8e17-3a165c47481f": 1795207667
+  "01a1f95b-3521-7f93-8e17-3a165c47481f": 1795207667,
+  "01a207dd-4d35-7961-8cbc-2c9ae46d7777": 1795434320
  }
 }
