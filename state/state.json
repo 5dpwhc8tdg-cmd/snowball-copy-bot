@@ -104,6 +104,19 @@
    },
    "updated_at": 1795025313
   },
+  "RU000A10BZT3": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2028-06-22",
+    "name": "Биннофарм Групп 001Р-06",
+    "nominal": 1000,
+    "price": 999.5,
+    "price_pct_of_nominal": 100.0,
+    "rating": null,
+    "ytm": 14.234826932195354
+   },
+   "updated_at": 1795474573
+  },
   "RU000A10C3N8": {
    "payload": {
     "is_qualified_only": null,
@@ -12085,6 +12098,23 @@
    },
    "updated_at": 1795090977
   },
+  "profile:RU000A10BZT3": {
+   "payload": {
+    "amort_count": 0,
+    "bond_subtype": null,
+    "calloption": null,
+    "coupon_count": 0,
+    "coupon_details": null,
+    "days_to_redemption": null,
+    "faceunit": null,
+    "facevalue": null,
+    "has_prospectus": null,
+    "lotsize": null,
+    "offerdate": null,
+    "putoption": null
+   },
+   "updated_at": 1795474590
+  },
   "profile:RU000A10C3N8": {
    "payload": {
     "amort_count": 4,
@@ -17316,6 +17346,7 @@
   "01a1f93d-4930-7e61-8091-1bf67b8dd1b2": 1795207667,
   "01a1f95a-7102-7495-96a5-69f25909d69e": 1795207667,
   "01a1f95b-3521-7f93-8e17-3a165c47481f": 1795207667,
-  "01a207dd-4d35-7961-8cbc-2c9ae46d7777": 1795434320
+  "01a207dd-4d35-7961-8cbc-2c9ae46d7777": 1795434320,
+  "01a20849-8963-7375-963a-da05e7ca9011": 1795474570
  }
 }
