@@ -13,6 +13,19 @@
    },
    "updated_at": 1795025290
   },
+  "RU000A104JQ3": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2028-02-08",
+    "name": "ГК Самолет БО-П11",
+    "nominal": 1000,
+    "price": 569.7,
+    "price_pct_of_nominal": 57.0,
+    "rating": null,
+    "ytm": 342.55697757319325
+   },
+   "updated_at": 1795544687
+  },
   "RU000A107YT9": {
    "payload": {
     "is_qualified_only": null,
@@ -11334,6 +11347,23 @@
    },
    "updated_at": 1795076753
   },
+  "profile:RU000A104JQ3": {
+   "payload": {
+    "amort_count": 0,
+    "bond_subtype": null,
+    "calloption": null,
+    "coupon_count": 0,
+    "coupon_details": null,
+    "days_to_redemption": null,
+    "faceunit": null,
+    "facevalue": null,
+    "has_prospectus": null,
+    "lotsize": null,
+    "offerdate": null,
+    "putoption": null
+   },
+   "updated_at": 1795544706
+  },
   "profile:RU000A1053P7": {
    "payload": {
     "amort_count": 1,
@@ -17347,6 +17377,7 @@
   "01a1f95a-7102-7495-96a5-69f25909d69e": 1795207667,
   "01a1f95b-3521-7f93-8e17-3a165c47481f": 1795207667,
   "01a207dd-4d35-7961-8cbc-2c9ae46d7777": 1795434320,
-  "01a20849-8963-7375-963a-da05e7ca9011": 1795474570
+  "01a20849-8963-7375-963a-da05e7ca9011": 1795474570,
+  "01a20cd9-a8fc-75df-9cd3-b9199646732e": 1795544684
  }
 }
