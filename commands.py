@@ -89,9 +89,12 @@ class TelegramAPI:
 
 
 class CommandBot:
-    def __init__(self, cfg: Config, api_client: TelegramAPI):
+    def __init__(self, cfg: Config, api_client: TelegramAPI, max_hours: float = 0):
         self.cfg = cfg
         self.api = api_client
+        # 0 = слушать бесконечно (VPS/свой сервер). На GitHub Actions задаём
+        # 5.85, потому что job живёт не больше 6 часов.
+        self.max_hours = max_hours
         self.allowed = {str(c) for c in cfg.telegram_chat_ids}
         self.store = open_store(cfg)
         self.offset = int(self.store.get_meta("cmd_offset", 0) or 0)
@@ -409,8 +412,9 @@ class CommandBot:
         log.info("Слушаю команды в Telegram (Ctrl+C — выход)")
         started = time.time()
         while True:
-            if time.time() - started > 5.85 * 3600:  # под лимит job в Actions (6 ч)
-                log.info("Отработал 5.85 ч (лимит job'а 6 ч) — выхожу, перезапуск по расписанию")
+            if self.max_hours and time.time() - started > self.max_hours * 3600:
+                log.info("Отработал %.2f ч (лимит job'а) — выхожу, перезапуск по расписанию",
+                         self.max_hours)
                 return
             try:
                 data = self.api.call(
@@ -486,7 +490,7 @@ def main() -> int:
     if not cfg.telegram_token or not cfg.telegram_chat_ids:
         log.error("Нужны TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID")
         return 2
-    bot = CommandBot(cfg, TelegramAPI(cfg.telegram_token))
+    bot = CommandBot(cfg, TelegramAPI(cfg.telegram_token), max_hours=5.85)
     try:
         if "--once" in sys.argv[1:]:
             poll_once(bot)

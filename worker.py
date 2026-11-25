@@ -81,7 +81,8 @@ def main() -> int:
     log.info("Время МСК сейчас: %s", dipscanner.now_msk().strftime("%H:%M:%S"))
 
     store = open_store(cfg)
-    listener = cmd_module.CommandBot(cfg, cmd_module.TelegramAPI(cfg.telegram_token))
+    # max_hours=0 — слушаем бесконечно (на VPS нет лимита job'а GitHub)
+    listener = cmd_module.CommandBot(cfg, cmd_module.TelegramAPI(cfg.telegram_token), max_hours=0)
 
     def _stop(*_):
         log.info("Останавливаюсь…")
@@ -89,6 +90,28 @@ def main() -> int:
 
     signal.signal(signal.SIGTERM, _stop)
     signal.signal(signal.SIGINT, _stop)
+
+    # «Проснулся» — один раз в 6 часов максимум, чтобы при перезапусках
+    # (Restart=always) не было спама, но было видно, что сервер жив.
+    try:
+        import time as _t
+        last_ping = float(store.get_meta("worker_ping_at", 0) or 0)
+        if os.environ.get("WORKER_STARTUP_PING", "1") == "1" and _t.time() - last_ping > 6 * 3600:
+            chats = cfg.telegram_chat_ids
+            text = (f"✅ <b>Бот запущен на сервере</b>\n"
+                    f"🕒 {dipscanner.now_msk():%d.%m.%Y %H:%M} МСК\n"
+                    f"📊 Портфель: {cfg.portfolio_title}\n"
+                    f"⏱ Проверка сделок каждые {cfg.poll_interval // 60} мин\n"
+                    f"<i>Сделки придут сюда сразу после публикации автором</i>")
+            for cid in chats:
+                try:
+                    listener.api.send(cid, text)
+                except Exception as e:  # noqa: BLE001
+                    log.warning("стартовое сообщение не отправлено: %s", e)
+            store.set_meta("worker_ping_at", _t.time())
+            store.flush()
+    except Exception as e:  # noqa: BLE001
+        log.warning("стартовое сообщение: %s", e)
 
     threads = [threading.Thread(target=listener.run, name="tg-commands", daemon=True)]
     if os.environ.get("WORKER_CHECK", "1") == "1":
