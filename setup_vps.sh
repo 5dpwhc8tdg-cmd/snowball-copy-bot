@@ -17,14 +17,17 @@
 set -euo pipefail
 
 REPO_URL="${REPO_URL:-https://github.com/5dpwhc8tdg-cmd/snowball-copy-bot.git}"
-APP_DIR="/opt/snowball-copy-bot"
-APP_USER="snowball"
-SERVICE="snowball-worker"
+APP_DIR="${APP_DIR:-/opt/snowball-copy-bot}"
+APP_USER="${APP_USER:-snowball}"
+SERVICE="${SERVICE:-snowball-worker}"
+UNIT_DIR="${UNIT_DIR:-/etc/systemd/system}"
 
 say() { printf '\n\033[1;36m== %s\033[0m\n' "$*"; }
 die() { printf '\n\033[1;31m!! %s\033[0m\n' "$*" >&2; exit 1; }
 
 [ "$(id -u)" = "0" ] || die "Запустите через sudo: sudo bash setup_vps.sh"
+command -v python3 >/dev/null || die "Нет python3 — это не Debian/Ubuntu?"
+command -v systemctl >/dev/null || die "Нет systemd (в контейнере служба не поставится)"
 
 say "1/7 Пакеты"
 export DEBIAN_FRONTEND=noninteractive
@@ -92,7 +95,7 @@ EOF
 fi
 
 say "6/7 Служба systemd"
-cat > "/etc/systemd/system/$SERVICE.service" <<EOF
+cat > "$UNIT_DIR/$SERVICE.service" <<EOF
 [Unit]
 Description=Snowball Copy Bot — сделки портфеля в Telegram
 After=network-online.target
@@ -113,16 +116,34 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 EOF
-chown -R "$APP_USER":"$APP_USER" "$APP_DIR"
+if ! chown -R "$APP_USER":"$APP_USER" "$APP_DIR" 2>/dev/null; then
+  echo "⚠️  не смог сменить владельца файлов на $APP_USER — проверьте права вручную"
+fi
 systemctl daemon-reload
 systemctl enable --quiet "$SERVICE"
 systemctl restart "$SERVICE"
 sleep 4
 
 say "7/7 Проверка"
+sleep 3
 systemctl --no-pager --lines=0 status "$SERVICE" || true
 echo
-journalctl -u "$SERVICE" -n 15 --no-pager || true
+journalctl -u "$SERVICE" -n 20 --no-pager || true
+
+# Токен принят? Без этого «работает» ничего не значит: бот может крутиться,
+# а сообщения не доходить.
+TOKEN_OK=$(journalctl -u "$SERVICE" -n 60 --no-pager 2>/dev/null | grep -c "токен принят" || true)
+if [ "${TOKEN_OK:-0}" = "0" ]; then
+  cat <<'WARN'
+
+⚠️  В журнале нет подтверждения, что Telegram принял токен.
+    Проверьте TELEGRAM_BOT_TOKEN в /opt/snowball-copy-bot/.env
+    и перезапустите: systemctl restart snowball-worker
+WARN
+else
+  echo
+  echo "✅ Токен принят Telegram — бот на связи."
+fi
 cat <<EOF
 
 Готово. Что дальше:

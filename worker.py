@@ -76,13 +76,26 @@ def main() -> int:
         log.error("Нужны TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID")
         return 2
 
+    # Проверка токена ДО запуска потоков. Иначе при опечатке в токене бот
+    # молча работает и ничего не присылает — ровно тот случай, когда владелец
+    # думает, что следит за сделками, а на деле нет.
+    api_client = cmd_module.TelegramAPI(cfg.telegram_token)
+    try:
+        me = api_client.call("getMe", {})
+        bot_name = ((me.get("result") or {}).get("username") or "?")
+        log.info("Telegram: токен принят, бот @%s", bot_name)
+    except Exception as e:  # noqa: BLE001
+        log.error("Telegram не принял токен: %s", e)
+        log.error("Проверьте TELEGRAM_BOT_TOKEN в %s", os.environ.get("ENV_FILE", ".env"))
+        return 3
+
     log.info("Портфель: %s (%s)", cfg.portfolio_title, cfg.portfolio_id)
     log.info("Состояние: %s (%s)", cfg.state_path, cfg.state_backend)
     log.info("Время МСК сейчас: %s", dipscanner.now_msk().strftime("%H:%M:%S"))
 
     store = open_store(cfg)
     # max_hours=0 — слушаем бесконечно (на VPS нет лимита job'а GitHub)
-    listener = cmd_module.CommandBot(cfg, cmd_module.TelegramAPI(cfg.telegram_token), max_hours=0)
+    listener = cmd_module.CommandBot(cfg, api_client, max_hours=0)
 
     def _stop(*_):
         log.info("Останавливаюсь…")
