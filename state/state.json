@@ -273,18 +273,31 @@
    },
    "updated_at": 1795207673
   },
+  "RU000A10CM06": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2028-08-13",
+    "name": "АПРИ БО-002Р-11",
+    "nominal": 1000,
+    "price": 564.6,
+    "price_pct_of_nominal": 56.5,
+    "rating": null,
+    "ytm": 88.39193228390798
+   },
+   "updated_at": 1795817903
+  },
   "RU000A10CM14": {
    "payload": {
     "is_qualified_only": null,
     "maturity": "2028-08-25",
     "name": "Росинтер Холдинг БО-01",
     "nominal": 1000,
-    "price": 586.1,
-    "price_pct_of_nominal": 58.6,
+    "price": 636.9,
+    "price_pct_of_nominal": 63.7,
     "rating": null,
-    "ytm": 248.24351646368459
+    "ytm": 240.1210121012101
    },
-   "updated_at": 1795085560
+   "updated_at": 1795817900
   },
   "RU000A10CST6": {
    "payload": {
@@ -12562,6 +12575,23 @@
    },
    "updated_at": 1795207703
   },
+  "profile:RU000A10CM06": {
+   "payload": {
+    "amort_count": 0,
+    "bond_subtype": null,
+    "calloption": null,
+    "coupon_count": 0,
+    "coupon_details": null,
+    "days_to_redemption": null,
+    "faceunit": null,
+    "facevalue": null,
+    "has_prospectus": null,
+    "lotsize": null,
+    "offerdate": null,
+    "putoption": null
+   },
+   "updated_at": 1795817951
+  },
   "profile:RU000A10CM14": {
    "payload": {
     "amort_count": 0,
@@ -12577,7 +12607,7 @@
     "offerdate": null,
     "putoption": null
    },
-   "updated_at": 1795639502
+   "updated_at": 1795817939
   },
   "profile:RU000A10CM89": {
    "payload": {
@@ -13896,9 +13926,6 @@
      "RU000A104081": "AAA",
      "RU000A1040T6": "AAA",
      "RU000A1040U4": "AAA",
-     "RU000A1041M9": "AAA",
-     "RU000A1041N7": "AAA",
-     "RU000A1043H5": "AAA",
      "RU000A1043J1": "AA",
      "RU000A1043P8": "AAA",
      "RU000A1043Q6": "AAA",
@@ -13966,7 +13993,6 @@
      "RU000A105DN0": "AAA",
      "RU000A105DR1": "AAA",
      "RU000A105GW4": "AA+",
-     "RU000A105KB0": "AA-",
      "RU000A105KR6": "AA-",
      "RU000A105L27": "A+",
      "RU000A105M67": "AA",
@@ -14008,11 +14034,9 @@
      "RU000A106ZP6": "AAA",
      "RU000A107464": "AAA",
      "RU000A1074S7": "AAA",
-     "RU000A1074T5": "AA+",
      "RU000A107936": "AAA",
      "RU000A107977": "AA+",
      "RU000A107985": "AAA",
-     "RU000A107A28": "AA+",
      "RU000A107AS1": "AA+",
      "RU000A107D17": "AAA",
      "RU000A107D25": "AAA",
@@ -14098,7 +14122,6 @@
      "RU000A109X03": "AAA",
      "RU000A109X37": "AAA",
      "RU000A109YH0": "AAA",
-     "RU000A109YM0": "AA+",
      "RU000A109YT5": "AA+",
      "RU000A10A125": "AAA",
      "RU000A10A182": "AAA",
@@ -14107,7 +14130,6 @@
      "RU000A10A6X2": "AAA",
      "RU000A10A7N1": "AAA",
      "RU000A10A7W2": "AA+",
-     "RU000A10AA10": "AA",
      "RU000A10AA44": "AA+",
      "RU000A10AAQ4": "AAA",
      "RU000A10ADT2": "AAA",
@@ -14299,9 +14321,9 @@
      "RU000A10DCF7": "AA-",
      "RU000A10DD30": "AAA",
      "RU000A10DDA6": "AAA",
+     "RU000A10DDL3": "AAA",
      "RU000A10DF38": "AAA",
      "RU000A10DFL8": "AA+",
-     "RU000A10DGA9": "AA",
      "RU000A10DHT7": "AA-",
      "RU000A10DHX9": "A+",
      "RU000A10DJH8": "AA-",
@@ -14574,16 +14596,20 @@
      "RU000A10GFJ5": "AA",
      "RU000A10GFP2": "AAA",
      "RU000A10GG00": "AAA",
+     "RU000A10GGN5": "AA+",
      "RU000A10GGX4": "AAA",
      "RU000A10GGY2": "AA",
      "RU000A10GHF9": "AA-",
      "RU000A10GJ07": "AAA",
      "RU000A10GJA6": "AAA",
+     "RU000A10GL86": "AA",
      "RU000A10GLD6": "AA",
-     "RU000A10GMP8": "AA-"
+     "RU000A10GMP8": "AA-",
+     "RU000A10GNQ4": "AAA",
+     "RU000A10GNR2": "AAA"
     }
    },
-   "updated_at": 1795639432
+   "updated_at": 1795817929
   }
  },
  "meta": {
@@ -17867,6 +17893,8 @@
   "01a21cbd-4f1e-7719-9d80-5d1fe6a47ab9": 1795786335,
   "01a21cbd-815c-7dfb-a5f4-041ed8ea51e4": 1795786335,
   "01a21cbd-c25d-735c-83ad-18ce558fa9bd": 1795786335,
-  "01a21d2a-961f-7f59-a0aa-1a66debfb4fd": 1795786335
+  "01a21d2a-961f-7f59-a0aa-1a66debfb4fd": 1795786335,
+  "01a21e2d-dc8f-7a13-a005-7f59b3a74a80": 1795817897,
+  "01a21ed9-97c1-74fa-a799-61a559b90505": 1795817897
  }
 }
