@@ -39,6 +39,19 @@
    },
    "updated_at": 1795639352
   },
+  "RU000A107FG5": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2027-11-30",
+    "name": "Транс-Миссия БО-02",
+    "nominal": 1000,
+    "price": 671.46,
+    "price_pct_of_nominal": 67.1,
+    "rating": null,
+    "ytm": 75.58214026832715
+   },
+   "updated_at": 1795786338
+  },
   "RU000A107GT6": {
    "payload": {
     "is_qualified_only": null,
@@ -136,12 +149,12 @@
     "maturity": "2028-05-07",
     "name": "АБЗ-1 002P-03",
     "nominal": 1000,
-    "price": 992.8,
+    "price": 992.6,
     "price_pct_of_nominal": 99.3,
     "rating": null,
-    "ytm": 15.402806726387734
+    "ytm": 15.032153790739317
    },
-   "updated_at": 1795025299
+   "updated_at": 1795786355
   },
   "RU000A10BQH7": {
    "payload": {
@@ -214,12 +227,12 @@
     "maturity": "2028-07-02",
     "name": "МИРРИКО БО-П03",
     "nominal": 1000,
-    "price": 669,
-    "price_pct_of_nominal": 66.9,
+    "price": 631.6,
+    "price_pct_of_nominal": 63.2,
     "rating": null,
-    "ytm": 110.88363863547319
+    "ytm": 128.10652830478537
    },
-   "updated_at": 1795047590
+   "updated_at": 1795786345
   },
   "RU000A10C5B8": {
    "payload": {
@@ -429,6 +442,19 @@
    },
    "updated_at": 1795730058
   },
+  "RU000A10E655": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2029-07-11",
+    "name": "ГЛОРАКС 001Р-05",
+    "nominal": 1000,
+    "price": 838.8,
+    "price_pct_of_nominal": 83.9,
+    "rating": null,
+    "ytm": 31.56695057646336
+   },
+   "updated_at": 1795786352
+  },
   "RU000A10E6J7": {
    "payload": {
     "is_qualified_only": null,
@@ -572,18 +598,31 @@
    },
    "updated_at": 1794941585
   },
+  "RU000A10G270": {
+   "payload": {
+    "is_qualified_only": null,
+    "maturity": "2029-10-29",
+    "name": "Первое кол.бюро НАО 001Р-12",
+    "nominal": 1000,
+    "price": 993,
+    "price_pct_of_nominal": 99.3,
+    "rating": null,
+    "ytm": 9.688073189650844
+   },
+   "updated_at": 1795786348
+  },
   "RU000A10GLD6": {
    "payload": {
     "is_qualified_only": null,
     "maturity": "2029-11-03",
     "name": "АО Авто Финанс Банк БО-001Р-20",
     "nominal": 1000,
-    "price": 999.8,
-    "price_pct_of_nominal": 100.0,
+    "price": 999.4,
+    "price_pct_of_nominal": 99.9,
     "rating": null,
-    "ytm": 16.582738574615604
+    "ytm": 16.496779840344278
    },
-   "updated_at": 1795098153
+   "updated_at": 1795786341
   },
   "dips:hist:all": {
    "payload": {
@@ -11726,6 +11765,23 @@
    },
    "updated_at": 1795187477
   },
+  "profile:RU000A107FG5": {
+   "payload": {
+    "amort_count": 0,
+    "bond_subtype": null,
+    "calloption": null,
+    "coupon_count": 0,
+    "coupon_details": null,
+    "days_to_redemption": null,
+    "faceunit": null,
+    "facevalue": null,
+    "has_prospectus": null,
+    "lotsize": null,
+    "offerdate": null,
+    "putoption": null
+   },
+   "updated_at": 1795786398
+  },
   "profile:RU000A107FN1": {
    "payload": {
     "amort_count": 4,
@@ -12299,35 +12355,20 @@
   },
   "profile:RU000A10BNM4": {
    "payload": {
-    "amort_count": 6,
-    "amort_upcoming": 6,
-    "avg_value_5d": 37159276.12,
-    "bond_subtype": "До погашения",
+    "amort_count": 0,
+    "bond_subtype": null,
     "calloption": null,
-    "coupon_count": 20,
+    "coupon_count": 0,
     "coupon_details": null,
-    "coupon_period_days": null,
-    "days_history": 171,
-    "days_to_redemption": "534",
-    "drawdown_from_max_pct": -8.28402366863906,
-    "faceunit": "SUR",
-    "facevalue": "1000",
-    "has_prospectus": "1",
+    "days_to_redemption": null,
+    "faceunit": null,
+    "facevalue": null,
+    "has_prospectus": null,
     "lotsize": null,
-    "max_52w": 111.54,
-    "min_52w": 100.03,
-    "next_amort_date": "2027-02-12",
-    "next_coupon_date": "2026-12-14",
-    "next_coupon_days": 23,
-    "next_coupon_pct": 25.5,
-    "next_coupon_value": 20.96,
     "offerdate": null,
-    "prev_drops": 2,
-    "prev_drops_rebound_median_pct": 1.323132967856886,
-    "prev_drops_up_share_pct": 100.0,
     "putoption": null
    },
-   "updated_at": 1795207690
+   "updated_at": 1795786469
   },
   "profile:RU000A10BQH7": {
    "payload": {
@@ -12407,7 +12448,7 @@
     "offerdate": null,
     "putoption": null
    },
-   "updated_at": 1795639542
+   "updated_at": 1795786421
   },
   "profile:RU000A10BZT3": {
    "payload": {
@@ -12441,7 +12482,7 @@
     "offerdate": null,
     "putoption": null
    },
-   "updated_at": 1795639459
+   "updated_at": 1795786433
   },
   "profile:RU000A10C741": {
    "payload": {
@@ -12885,6 +12926,23 @@
     "putoption": null
    },
    "updated_at": 1795730184
+  },
+  "profile:RU000A10E655": {
+   "payload": {
+    "amort_count": 0,
+    "bond_subtype": null,
+    "calloption": null,
+    "coupon_count": 0,
+    "coupon_details": null,
+    "days_to_redemption": null,
+    "faceunit": null,
+    "facevalue": null,
+    "has_prospectus": null,
+    "lotsize": null,
+    "offerdate": null,
+    "putoption": null
+   },
+   "updated_at": 1795786457
   },
   "profile:RU000A10E6D0": {
    "payload": {
@@ -13540,6 +13598,23 @@
    },
    "updated_at": 1795193470
   },
+  "profile:RU000A10G270": {
+   "payload": {
+    "amort_count": 0,
+    "bond_subtype": null,
+    "calloption": null,
+    "coupon_count": 0,
+    "coupon_details": null,
+    "days_to_redemption": null,
+    "faceunit": null,
+    "facevalue": null,
+    "has_prospectus": null,
+    "lotsize": null,
+    "offerdate": null,
+    "putoption": null
+   },
+   "updated_at": 1795786445
+  },
   "profile:RU000A10GG75": {
    "payload": {
     "amort_count": 20,
@@ -13569,29 +13644,20 @@
   },
   "profile:RU000A10GLD6": {
    "payload": {
-    "amort_count": 1,
-    "amort_upcoming": 1,
-    "avg_value_5d": 489737067.7999999,
-    "bond_subtype": "До погашения",
+    "amort_count": 0,
+    "bond_subtype": null,
     "calloption": null,
-    "coupon_count": 20,
-    "coupon_details": "Фиксированный с известными купонами",
-    "coupon_period_days": null,
-    "days_history": 1,
-    "days_to_redemption": "1080",
-    "drawdown_from_max_pct": 0.0,
-    "has_prospectus": "1",
-    "max_52w": 99.99,
-    "min_52w": 99.99,
-    "next_amort_date": "2029-11-03",
-    "next_coupon_date": "2026-12-19",
-    "next_coupon_days": 29,
-    "next_coupon_pct": 16.6,
-    "next_coupon_value": 13.64,
+    "coupon_count": 0,
+    "coupon_details": null,
+    "days_to_redemption": null,
+    "faceunit": null,
+    "facevalue": null,
+    "has_prospectus": null,
+    "lotsize": null,
     "offerdate": null,
     "putoption": null
    },
-   "updated_at": 1795098159
+   "updated_at": 1795786409
   },
   "profile:XS1760804184": {
    "payload": {
@@ -17794,6 +17860,13 @@
   "01a2190c-6301-7d74-ac2c-93e4e913cf17": 1795730049,
   "01a21914-3780-7f17-b331-6fc13b17fd13": 1795730049,
   "01a21914-632a-722f-9b55-62298b0abcea": 1795730049,
-  "01a21916-6f15-7310-9032-4b1e19b2f2a6": 1795730049
+  "01a21916-6f15-7310-9032-4b1e19b2f2a6": 1795730049,
+  "01a21cbc-6a5a-7754-881f-d4f32829e3b2": 1795786335,
+  "01a21cbc-9b52-72a6-b0cf-4663a6a0d460": 1795786335,
+  "01a21cbd-1dee-7862-91a7-6776e4116e89": 1795786335,
+  "01a21cbd-4f1e-7719-9d80-5d1fe6a47ab9": 1795786335,
+  "01a21cbd-815c-7dfb-a5f4-041ed8ea51e4": 1795786335,
+  "01a21cbd-c25d-735c-83ad-18ce558fa9bd": 1795786335,
+  "01a21d2a-961f-7f59-a0aa-1a66debfb4fd": 1795786335
  }
 }
